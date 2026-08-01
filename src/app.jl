@@ -119,6 +119,8 @@ function App(root::Widget, driver::D;
                Dict{KeyEvent,Symbol}(), vp, false, false,
                should_suspend(vp, config.min_size), true, 0, nothing,
                Timer[])
+    bind!(a, "ctrl+c", :quit)
+    bind!(a, "ctrl+q", :quit)
     walk(root) do w
         node(w).app = a
         nothing
