@@ -58,7 +58,7 @@ jobs:
       # No "dev unregistered dependencies" step here: every dep in
       # Project.toml is registered or a stdlib. ManyUIWeb is the one that
       # needs to dev this package by URL.
-            - name: Authenticate to private repositories
+      - name: Authenticate to private repositories
         env:
           MANYUI_READ_TOKEN: ${{ secrets.MANYUI_READ_TOKEN }}
         shell: bash
@@ -67,7 +67,9 @@ jobs:
             echo "::error::Secret MANYUI_READ_TOKEN is not set. Repositories are private and cannot be cloned without it."
             exit 1
           fi
-          git config --global             url."https://x-access-token:${MANYUI_READ_TOKEN}@github.com/".insteadOf             "https://github.com/"
+          git config --global \
+            url."https://x-access-token:${MANYUI_READ_TOKEN}@github.com/".insteadOf \
+            "https://github.com/"
       - name: Dev unregistered dependencies
         env:
           JULIA_PKG_USE_CLI_GIT: "true"
