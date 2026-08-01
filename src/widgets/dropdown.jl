@@ -127,7 +127,7 @@ mutable struct DropDown{T,F,C} <: Widget
     absent from `children(w)`. The popup is a paint-and-hit layer, not a
     focus layer: the DropDown KEEPS FOCUS while it is open and forwards.
     """
-    const panel::Any}
+    const panel::Any
     "True while the popup is open. PAINT-reactive: the arrow flips."
     open::Any
     "The COMMITTED option, 1-based; `0` when nothing is chosen."
