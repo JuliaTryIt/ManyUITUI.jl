@@ -178,7 +178,7 @@ end
     buf = Buffer(20, 6)
     clear!(buf)
     render!(w, buf)
-    # TV_INDENT == 2 cells per level; the twisty sits at 1 + 2*depth.
+    # ManyUI.TV_INDENT == 2 cells per level; the twisty sits at 1 + 2*depth.
     @test buf[1, 1].content == "-"     # r,  depth 0
     @test buf[3, 2].content == "-"     # a,  depth 1
     @test buf[5, 3].content == "-"     # b,  depth 2
@@ -450,14 +450,14 @@ end
     paint!(buf, root)
     col = [buf[6, y].content for y in 1:4]
     # 20 rows, a 4-cell track: a 1-cell thumb pinned to the top.
-    @test col[1] == ManyUITUI.SB_THUMB
-    @test all(==(ManyUITUI.SB_TRACK_V), col[2:4])
+    @test col[1] == ManyUI.SB_THUMB
+    @test all(==(ManyUI.SB_TRACK_V), col[2:4])
 
     scroll_to!(w, Offset(0, 16))
     clear!(buf)
     paint!(buf, root)
     col = [buf[6, y].content for y in 1:4]
-    @test col[4] == ManyUITUI.SB_THUMB   # pinned to the BOTTOM
+    @test col[4] == ManyUI.SB_THUMB   # pinned to the BOTTOM
 end
 
 @testitem "tree: measure IS avail (greedy by design)" begin
@@ -519,8 +519,8 @@ end
     # ASCII, and the text column is invariant only if all three are one
     # cell wide. `Base.textwidth` is forbidden; `text_width` is the
     # grapheme-aware measure.
-    @test text_width(ManyUITUI.TV_OPEN) == 1
-    @test text_width(ManyUITUI.TV_CLOSED) == 1
-    @test text_width(ManyUITUI.TV_LEAF) == 1
-    @test ManyUITUI.TV_INDENT == 2
+    @test text_width(ManyUI.TV_OPEN) == 1
+    @test text_width(ManyUI.TV_CLOSED) == 1
+    @test text_width(ManyUI.TV_LEAF) == 1
+    @test ManyUI.TV_INDENT == 2
 end

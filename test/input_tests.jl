@@ -555,7 +555,7 @@ end
 @testitem "Input: file contains no IO type" begin
     using ManyUI, ManyUITUI
 
-    src = read(joinpath(pkgdir(ManyUI), "src", "input.jl"), String)
+    src = read(joinpath(pkgdir(ManyUITUI), "src", "input.jl"), String)
     @test !occursin(r"\bIO\b", src)
     @test !occursin(r"\bIOBuffer\b", src)
     @test !occursin("stdin", src)

@@ -6,6 +6,7 @@
 
 @testitem "driver: DriverCaps is isbits" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     @test isbitstype(DriverCaps)
     @test isconcretetype(DriverCaps)
@@ -13,6 +14,7 @@ end
 
 @testitem "driver: DriverCaps keyword constructor matches the field order" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     c = DriverCaps()
     @test c.color_depth === ColorDepth.TRUECOLOR
@@ -57,6 +59,7 @@ end
 
 @testitem "driver: ManyUITUI.REQUIRED_DRIVER_METHODS has nine entries" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     @test length(ManyUITUI.REQUIRED_DRIVER_METHODS) == 9
     @test ManyUITUI.REQUIRED_DRIVER_METHODS ===
@@ -67,6 +70,7 @@ end
 
 @testitem "driver: ManyUITUI.check_driver_interface finds gaps" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     struct GapDriver <: Driver end
 
@@ -94,6 +98,7 @@ end
 
 @testitem "driver: ManyUITUI.check_driver_interface accepts the shipped drivers" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     @test ManyUITUI.check_driver_interface(HeadlessDriver) == Symbol[]
     @test ManyUITUI.check_driver_interface(TerminalDriver) == Symbol[]
@@ -101,6 +106,7 @@ end
 
 @testitem "driver: an unimplemented seam throws DriverInterfaceError" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     struct BareDriver <: Driver end
     d = BareDriver()
@@ -109,11 +115,11 @@ end
               capabilities, events)
         @test_throws DriverInterfaceError f(d)
     end
-    @test_throws DriverInterfaceError emit!(d, UInt8[0x61])
+    @test_throws DriverInterfaceError ManyUITUI.emit!(d, UInt8[0x61])
     @test_throws DriverInterfaceError isopen(d)
 
     e = try
-        flush!(d)
+        ManyUITUI.flush!(d)
     catch err
         err
     end
@@ -122,11 +128,12 @@ end
     @test e.method === :flush!
     msg = sprint(showerror, e)
     @test occursin("BareDriver", msg)
-    @test occursin("does not implement ManyUITUI.flush!", msg)
+    @test occursin("does not implement ManyUI.flush!", msg)
 end
 
 @testitem "driver: Base.close forwards to stop!" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     mutable struct CloseDriver <: Driver
         stopped::Int
@@ -142,6 +149,7 @@ end
 
 @testitem "driver: negative invariant holds" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # 2.1 / U3. A Driver moves bytes, reports a size and capabilities,
     # and yields events. If any required method mentions a render-path
@@ -154,7 +162,7 @@ end
 
     leaks = Tuple{Symbol,Any}[]
     for name in ManyUITUI.REQUIRED_DRIVER_METHODS
-        f = name === :isopen ? Base.isopen : getfield(ManyUI, name)
+        f = name === :isopen ? Base.isopen : getfield(ManyUITUI, name)
         for m in methods(f)
             sig = Base.unwrap_unionall(m.sig)
             params = sig.parameters
@@ -176,6 +184,7 @@ end
 
 @testitem "driver: notify_resize! default puts a ResizeEvent" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # 2.2. A SIGWINCH poll, a web control frame and a test harness all
     # funnel through this one door.
@@ -193,6 +202,7 @@ end
 
 @testitem "driver: a foreign driver needs only the nine methods" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # 2.1. THE seam test. `TapeDriver` stands in for ManyUIWeb's
     # `WebSocketDriver`: an in-memory driver that captures every emitted
@@ -230,13 +240,13 @@ end
     @test ManyUITUI.check_driver_interface(TapeDriver) == Symbol[]
 
     # start!'s size_hint spares a foreign target one wrong frame.
-    start!(d, Size(100, 30))
-    @test display_size(d) === Size(100, 30)
+    ManyUITUI.start!(d, Size(100, 30))
+    @test ManyUITUI.display_size(d) === Size(100, 30)
     @test isopen(d)
 
     # Bytes out land in the buffer verbatim -- no tty anywhere.
-    @test emit!(d, codeunits("\e[1;1Hxy")) == 8
-    flush!(d)
+    @test ManyUITUI.emit!(d, codeunits("\e[1;1Hxy")) == 8
+    ManyUITUI.flush!(d)
     @test String(take!(d.sink)) == "\e[1;1Hxy"
 
     # Bytes in go through the ONE shared pump, so a foreign driver
@@ -250,13 +260,14 @@ end
     notify_resize!(d, Size(40, 12))
     @test take!(events(d)) == ResizeEvent(Size(40, 12))
 
-    stop!(d)
+    ManyUITUI.stop!(d)
     @test !isopen(d)
     @test d.restored
 end
 
 @testitem "driver: ManyUI has no HTTP dependency" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # Invariant 1, as a diff anyone can check.
     path = joinpath(pkgdir(ManyUI), "Project.toml")
@@ -271,6 +282,7 @@ end
 
 @testitem "terminal: detect_caps color depth follows detect_color_depth" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     truecolor = Dict("TERM" => "xterm", "COLORTERM" => "truecolor")
     c256 = Dict("TERM" => "xterm-256color")
@@ -300,6 +312,7 @@ end
 
 @testitem "terminal: detect_caps rule table" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # TERM == dumb or unset: every optional feature is off, title is on.
     for env in (Dict("TERM" => "dumb"), Dict{String,String}())
@@ -337,6 +350,7 @@ end
 
 @testitem "terminal: conforms to the driver interface" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     @test TerminalDriver <: Driver
     @test ManyUITUI.check_driver_interface(TerminalDriver) == Symbol[]
@@ -346,7 +360,7 @@ end
     @test capabilities(d) === ManyUITUI.CAPS_MINIMAL
     @test events(d) isa Channel{Event}
     @test isopen(d)
-    @test display_size(d) isa Size
+    @test ManyUITUI.display_size(d) isa Size
 
     # A driver built with no caps probes the environment.
     d2 = TerminalDriver(in_stream = IOBuffer(), out_stream = IOBuffer())
@@ -355,26 +369,28 @@ end
 
 @testitem "terminal: emit! buffers and flush! commits" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     out = IOBuffer()
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                        caps = ManyUITUI.CAPS_MINIMAL)
 
-    @test emit!(d, codeunits("abc")) == 3
-    @test emit!(d, codeunits("de")) == 2
+    @test ManyUITUI.emit!(d, codeunits("abc")) == 3
+    @test ManyUITUI.emit!(d, codeunits("de")) == 2
     # flush! is the commit point: nothing is on the wire before it.
     @test isempty(take!(out))
 
-    @test flush!(d) === nothing
+    @test ManyUITUI.flush!(d) === nothing
     @test String(take!(out)) == "abcde"
 
     # A flush! with an empty staging buffer writes nothing.
-    flush!(d)
+    ManyUITUI.flush!(d)
     @test isempty(take!(out))
 end
 
 @testitem "terminal: start! emits alt screen then hide cursor" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # 2.3 (S2). The alternate screen keeps the user's scrollback
     # intact; the order is part of the contract.
@@ -383,7 +399,7 @@ end
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                        caps = caps, resize_poll = 3600.0)
     try
-        start!(d)
+        ManyUITUI.start!(d)
         got = String(take!(out))
         @test got == string(Ansi.ALT_SCREEN_ENTER,
                             Ansi.CURSOR_HIDE,
@@ -395,21 +411,22 @@ end
         @test d.started
 
         # Idempotent: a second start! is silent.
-        start!(d)
+        ManyUITUI.start!(d)
         @test isempty(take!(out))
     finally
-        stop!(d)
+        ManyUITUI.stop!(d)
     end
 end
 
 @testitem "terminal: caps gate every optional sequence" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     out = IOBuffer()
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                        caps = ManyUITUI.CAPS_MINIMAL, resize_poll = 3600.0)
     try
-        start!(d)
+        ManyUITUI.start!(d)
         got = String(take!(out))
         # ManyUITUI.CAPS_MINIMAL has no alt screen, mouse, paste or focus: only
         # the unconditional cursor hide goes out.
@@ -417,12 +434,13 @@ end
         @test !d.alt
         @test !d.mouse_on
     finally
-        stop!(d)
+        ManyUITUI.stop!(d)
     end
 end
 
 @testitem "terminal: alt screen entered and left in order" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # 2.3 (S2) + 2.5. restore! is the EXACT reverse of start!: leaving
     # the alternate screen before showing the cursor would strand an
@@ -430,9 +448,9 @@ end
     out = IOBuffer()
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                        caps = DriverCaps(), resize_poll = 3600.0)
-    start!(d)
+    ManyUITUI.start!(d)
     take!(out)
-    restore!(d)
+    ManyUITUI.restore!(d)
 
     got = String(take!(out))
     @test got == string(Ansi.FOCUS_OFF,
@@ -447,11 +465,12 @@ end
     # The whole point of the ordering, stated as an assertion.
     @test findfirst(Ansi.CURSOR_SHOW, got).start <
           findfirst(Ansi.ALT_SCREEN_EXIT, got).start
-    stop!(d)
+    ManyUITUI.stop!(d)
 end
 
 @testitem "terminal: start! enters raw, restore! exits" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # 2.3 (S1). Raw mode is REQUESTED here; the OS toggle is a no-op on
     # an IOBuffer, which is exactly why no test needs a tty. `d.raw`
@@ -460,15 +479,16 @@ end
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = IOBuffer(),
                        caps = ManyUITUI.CAPS_MINIMAL, resize_poll = 3600.0)
     @test !d.raw
-    start!(d)
+    ManyUITUI.start!(d)
     @test d.raw
-    restore!(d)
+    ManyUITUI.restore!(d)
     @test !d.raw
-    stop!(d)
+    ManyUITUI.stop!(d)
 end
 
 @testitem "terminal: set_raw! never throws on a non-tty" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # REPL.Terminals.raw! reaches for a libuv handle; an IOBuffer has
     # none. It must degrade to a false return, never an exception --
@@ -483,39 +503,42 @@ end
 
 @testitem "terminal: restore! is idempotent" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     out = IOBuffer()
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                        caps = DriverCaps(), resize_poll = 3600.0)
-    start!(d)
+    ManyUITUI.start!(d)
     take!(out)
 
-    @test restore!(d) === nothing
+    @test ManyUITUI.restore!(d) === nothing
     first = take!(out)
     @test !isempty(first)
 
     # 2.5: restore! runs from a catch, from a finally AND from atexit.
     # The second and third calls must be silent no-ops.
-    @test restore!(d) === nothing
+    @test ManyUITUI.restore!(d) === nothing
     @test isempty(take!(out))
-    @test restore!(d) === nothing
+    @test ManyUITUI.restore!(d) === nothing
     @test isempty(take!(out))
     @test d.restored
-    stop!(d)
+    ManyUITUI.stop!(d)
 end
 
 @testitem "terminal: restore! on a driver that never started is a no-op" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     out = IOBuffer()
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                        caps = DriverCaps())
-    @test restore!(d) === nothing
+    @test ManyUITUI.restore!(d) === nothing
     @test isempty(take!(out))
 end
 
 @testitem "terminal: restore! runs every step despite a throw" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # 2.5. THE crash-safety requirement. Every step must run even when
     # an earlier one throws, and restore! itself must never throw --
@@ -523,7 +546,7 @@ end
     out = IOBuffer()
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                        caps = DriverCaps(), resize_poll = 3600.0)
-    start!(d)
+    ManyUITUI.start!(d)
     @test d.raw
 
     # Sabotage the staging buffer: now EVERY sequence-writing step of
@@ -532,14 +555,15 @@ end
     close(d.outbuf)
     @test_throws ArgumentError write(d.outbuf, 0x61)
 
-    @test restore!(d) === nothing          # never throws
+    @test ManyUITUI.restore!(d) === nothing          # never throws
     @test !d.raw                           # step 6 ran after 5 throws
     @test d.restored                       # the loop completed
-    stop!(d)                               # also must not throw
+    ManyUITUI.stop!(d)                               # also must not throw
 end
 
 @testitem "terminal: restore! survives a throwing out_stream" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     mutable struct DeadOut <: IO
         writes::Int
@@ -554,13 +578,14 @@ end
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                        caps = DriverCaps(), resize_poll = 3600.0)
     d.started = true
-    @test restore!(d) === nothing
+    @test ManyUITUI.restore!(d) === nothing
     @test d.restored
     @test out.writes > 0
 end
 
 @testitem "terminal: displaysize rows cols are swapped into Size" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # `displaysize` is (rows, cols); `Size` is (width, height). This is
     # a known off-by-orientation trap, so it gets its own test.
@@ -569,63 +594,67 @@ end
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                        caps = ManyUITUI.CAPS_MINIMAL, resize_poll = 3600.0)
     try
-        start!(d)
-        @test display_size(d) === Size(100, 30)
-        @test display_size(d).width == 100
-        @test display_size(d).height == 30
+        ManyUITUI.start!(d)
+        @test ManyUITUI.display_size(d) === Size(100, 30)
+        @test ManyUITUI.display_size(d).width == 100
+        @test ManyUITUI.display_size(d).height == 30
     finally
-        stop!(d)
+        ManyUITUI.stop!(d)
     end
 end
 
 @testitem "terminal: start! honours a size_hint" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     inner = IOBuffer()
     out = IOContext(inner, :displaysize => (30, 100))
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                        caps = ManyUITUI.CAPS_MINIMAL, resize_poll = 3600.0)
     try
-        start!(d, Size(40, 12))
-        @test display_size(d) === Size(40, 12)
+        ManyUITUI.start!(d, Size(40, 12))
+        @test ManyUITUI.display_size(d) === Size(40, 12)
         @test take!(events(d)) == ResizeEvent(Size(40, 12))
     finally
-        stop!(d)
+        ManyUITUI.stop!(d)
     end
 end
 
 @testitem "terminal: start! posts an initial ResizeEvent" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # 2.2. The app never special-cases its first frame: the size
     # arrives through the same door a SIGWINCH would use.
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = IOBuffer(),
                        caps = ManyUITUI.CAPS_MINIMAL, resize_poll = 3600.0)
     try
-        start!(d)
+        ManyUITUI.start!(d)
         e = take!(events(d))
         @test e isa ResizeEvent
-        @test e.size === display_size(d)
+        @test e.size === ManyUITUI.display_size(d)
         @test e.size === Size(80, 24)
     finally
-        stop!(d)
+        ManyUITUI.stop!(d)
     end
 end
 
 @testitem "terminal: notify_resize! updates the cached size" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # 2.2. The one seam a SIGWINCH poll, a signal handler and a web
     # control frame all share.
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = IOBuffer(),
                        caps = ManyUITUI.CAPS_MINIMAL, resize_poll = 3600.0)
     @test notify_resize!(d, Size(120, 40)) === nothing
-    @test display_size(d) === Size(120, 40)
+    @test ManyUITUI.display_size(d) === Size(120, 40)
     @test take!(events(d)) == ResizeEvent(Size(120, 40))
 end
 
 @testitem "terminal: the resize poll pushes a ResizeEvent on a change" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # 2.2. The SIGWINCH source. Julia 1.12 exposes no async-signal-safe
     # SIGWINCH hook, so the driver polls -- but it funnels through
@@ -644,7 +673,7 @@ end
         e = take!(events(d))
         @test e isa ResizeEvent
         @test e.size === Size(100, 30)
-        @test display_size(d) === Size(100, 30)
+        @test ManyUITUI.display_size(d) === Size(100, 30)
     finally
         close(guard)
         isopen(events(d)) && close(events(d))
@@ -655,6 +684,7 @@ end
 
 @testitem "terminal: the reader loop pumps tty bytes into events" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     # The byte source is an IOBuffer, but the path is the production
     # one: readavailable -> pump_input! -> the channel.
@@ -668,31 +698,33 @@ end
 
 @testitem "terminal: set_title! is gated on caps.title" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     out = IOBuffer()
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                        caps = DriverCaps(title = true))
     @test set_title!(d, "app") === nothing
-    flush!(d)
+    ManyUITUI.flush!(d)
     @test String(take!(out)) == Ansi.title("app")
 
     quiet = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                            caps = DriverCaps(title = false))
     @test set_title!(quiet, "app") === nothing
-    flush!(quiet)
+    ManyUITUI.flush!(quiet)
     @test isempty(take!(out))
 end
 
 @testitem "terminal: stop! closes the channel and restores" begin
     using ManyUI, ManyUITUI
+import ManyUITUI: start!, stop!, restore!, emit!, flush!, display_size
 
     out = IOBuffer()
     d = TerminalDriver(in_stream = IOBuffer(), out_stream = out,
                        caps = DriverCaps(), resize_poll = 3600.0)
-    start!(d)
+    ManyUITUI.start!(d)
     @test isopen(d)
 
-    @test stop!(d) === nothing
+    @test ManyUITUI.stop!(d) === nothing
     @test !isopen(d)
     @test !isopen(events(d))
     @test d.restored
@@ -700,6 +732,6 @@ end
     @test !d.alt
 
     # Idempotent, and it must not throw the second time either.
-    @test stop!(d) === nothing
+    @test ManyUITUI.stop!(d) === nothing
     @test !isopen(d)
 end

@@ -11,7 +11,7 @@
     write_text!(a, 1, 4, "世界")
     b = copy(a)
 
-    p = diff(a, b)
+    p = ManyUITUI.diff(a, b)
     @test isempty(p)
     @test length(p) == 0
     @test n_cells(p) == 0
@@ -19,9 +19,9 @@
     @test p.size == Size(20, 5)
 
     # A buffer always matches itself, including a wide glyph.
-    @test isempty(diff(a, a))
+    @test isempty(ManyUITUI.diff(a, a))
     # Degenerate grids do not throw.
-    @test isempty(diff(Buffer(0, 0), Buffer(0, 0)))
+    @test isempty(ManyUITUI.diff(Buffer(0, 0), Buffer(0, 0)))
 end
 
 @testitem "diff: round-trip apply! law" begin
@@ -31,7 +31,7 @@ end
     # exactly enough to turn `a` into `b`. If the diff drops a cell the
     # law fails; if it is merely non-minimal the law still holds, which
     # is why the minimality tests below are separate.
-    law(a, b) = apply!(copy(a), diff(a, b)) == b
+    law(a, b) = apply!(copy(a), ManyUITUI.diff(a, b)) == b
 
     a = Buffer(12, 4)
     b = copy(a)
@@ -87,21 +87,21 @@ end
     set_cell!(b, 4, 1, "y", STYLE_NONE)
 
     # Default gap = 4: a 2-cell hole is cheaper to bridge than to jump.
-    p = diff(a, b)
+    p = ManyUITUI.diff(a, b)
     @test length(p) == 1
     @test p.spans[1].x == 1
     @test length(p.spans[1].cells) == 4
 
     # gap = 0 never bridges: two runs stay two spans.
-    p0 = diff(a, b; gap = 0)
+    p0 = ManyUITUI.diff(a, b; gap = 0)
     @test length(p0) == 2
     @test p0.spans[1] == Span(1, 1, [b[1, 1]])
     @test p0.spans[2] == Span(4, 1, [b[4, 1]])
 
     # The boundary is inclusive: a hole of exactly `gap` merges, one
     # cell wider does not.
-    @test length(diff(a, b; gap = 2)) == 1
-    @test length(diff(a, b; gap = 1)) == 2
+    @test length(ManyUITUI.diff(a, b; gap = 2)) == 1
+    @test length(ManyUITUI.diff(a, b; gap = 1)) == 2
 
     # A trailing unchanged stretch is never bridged: the span stops at
     # the last changed cell rather than running to the row's end.
@@ -111,10 +111,10 @@ end
     # every gap, and every patch still repaints at least what changed.
     nchanged = count(i -> a[i] != b[i], eachindex(a))
     for g in 0:6
-        @test apply!(copy(a), diff(a, b; gap = g)) == b
-        @test n_cells(diff(a, b; gap = g)) >= nchanged
+        @test apply!(copy(a), ManyUITUI.diff(a, b; gap = g)) == b
+        @test n_cells(ManyUITUI.diff(a, b; gap = g)) >= nchanged
     end
-    @test_throws ArgumentError diff(a, b; gap = -1)
+    @test_throws ArgumentError ManyUITUI.diff(a, b; gap = -1)
 end
 
 @testitem "diff: size mismatch produces a full patch" begin
@@ -125,7 +125,7 @@ end
     b = Buffer(6, 2)
     write_text!(b, 1, 1, "new")
 
-    p = diff(a, b)
+    p = ManyUITUI.diff(a, b)
     @test p.full
     @test p.size == Size(6, 2)
     # Spans cover all of `new`: one per row, full width.
@@ -137,10 +137,10 @@ end
     @test apply!(Buffer(6, 2), p) == b
 
     # Same-size buffers never take this branch.
-    @test !diff(a, copy(a)).full
+    @test !ManyUITUI.diff(a, copy(a)).full
     # A mismatch on either axis alone still forces full.
-    @test diff(a, Buffer(10, 2)).full
-    @test diff(a, Buffer(9, 3)).full
+    @test ManyUITUI.diff(a, Buffer(10, 2)).full
+    @test ManyUITUI.diff(a, Buffer(9, 3)).full
 
     # full_patch itself: every row, one span, full = true.
     fp = full_patch(a)
@@ -172,7 +172,7 @@ end
     write_text!(a, 3, 1, "世", STYLE_NONE)
     b = copy(a)
     set_cell!(b, 3, 1, "世", Style(fg = rgb(0, 255, 0)))
-    p = diff(a, b)
+    p = ManyUITUI.diff(a, b)
     @test p.spans[1].x == 3
     @test length(p.spans[1].cells) == 2
     assert_aligned(p, b)
@@ -186,7 +186,7 @@ end
     stale[4, 1] = Cell("x", STYLE_NONE)
     @test stale[3, 1] == fresh[3, 1]      # heads agree
     @test stale[4, 1] != fresh[4, 1]      # only the CONT differs
-    q = diff(stale, fresh)
+    q = ManyUITUI.diff(stale, fresh)
     @test q.spans[1].x == 3
     assert_aligned(q, fresh)
 
@@ -194,7 +194,7 @@ end
     e = Buffer(6, 1)
     f = copy(e)
     write_text!(f, 1, 1, "世界界")
-    r = diff(e, f)
+    r = ManyUITUI.diff(e, f)
     assert_aligned(r, f)
     @test apply!(copy(e), r) == f
 
@@ -212,12 +212,12 @@ end
     write_text!(b, 2, 3, "世")
 
     a0, b0 = copy(a), copy(b)
-    p = diff(a, b)
+    p = ManyUITUI.diff(a, b)
     @test a == a0
     @test b == b0
 
     # Running it again yields an equal patch: no hidden state.
-    @test diff(a, b) == p
+    @test ManyUITUI.diff(a, b) == p
     @test a == a0 && b == b0
 
     # The spans own their cells -- mutating a span cannot reach back
@@ -229,7 +229,7 @@ end
     c = Buffer(4, 1)
     c0 = copy(c)
     full_patch(c)
-    diff(a, c)
+    ManyUITUI.diff(a, c)
     @test c == c0 && a == a0
 
     # apply! is the ONLY mutating function here, and it returns its

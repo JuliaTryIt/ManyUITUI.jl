@@ -45,20 +45,20 @@ function render!(w::Scrollbar, buf::AbstractMatrix{Cell})::Nothing
     vert = w.axis === ScrollAxis.VERTICAL
     track = vert ? height : width
     st = computed_style(w)
-    (start, len) = thumb_span(_sb_metrics(w, track)...)
+    (start, len) = thumb_span(ManyUI._sb_metrics(w, track)...)
     if len == 0
         # Nothing to scroll. AUTO keeps the gutter and drops the ink;
         # ALWAYS says so with a thumb that fills the track.
         w.mode === ScrollMode.AUTO && return nothing
         start, len = 1, track
     else
-        g = vert ? SB_TRACK_V : SB_TRACK_H
+        g = vert ? ManyUI.SB_TRACK_V : ManyUI.SB_TRACK_H
         for i in 1:track
             _sb_put!(w, buf, i, g, st)
         end
     end
     for i in start:(start + len - 1)
-        _sb_put!(w, buf, i, SB_THUMB, st)
+        _sb_put!(w, buf, i, ManyUI.SB_THUMB, st)
     end
     return nothing
 end
@@ -69,8 +69,8 @@ function render!(w::TextInput, buf::AbstractMatrix{Cell})::Nothing
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
     s = w.text[]
-    lo, cw = _ti_caret_cells(w)
-    off = _ti_window(w, width, lo, cw)
+    lo, cw = ManyUI._ti_caret_cells(w)
+    off = ManyUI._ti_window(w, width, lo, cw)
     if isempty(s)
         isempty(w.placeholder) ||
             write_text!(buf, 1, 1, w.placeholder,
@@ -82,7 +82,7 @@ function render!(w::TextInput, buf::AbstractMatrix{Cell})::Nothing
     # `style_region!` clips, so a caret column outside the box is a
     # no-op rather than a throw, and it keeps the cell's content and
     # width -- reversing a head must not turn it into a fresh cell.
-    style_region!(buf, Region(lo - off + 1, 1, 1, 1), _TI_CARET)
+    style_region!(buf, Region(lo - off + 1, 1, 1, 1), ManyUI._TI_CARET)
     return nothing
 end
 
@@ -90,7 +90,7 @@ end
 function render!(w::List, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
-    _tc_sync!(w)
+    ManyUI._tc_sync!(w)
     st = computed_style(w)
     off = scroll_of(w)
     n = length(w.items)
@@ -102,13 +102,13 @@ function render!(w::List, buf::AbstractMatrix{Cell})::Nothing
         # `scroll_to!` can over-scroll far enough to wrap `i` negative.
         # An over-scroll is blank rows, NEVER a BoundsError.
         (1 <= i <= n) || break
-        rst = _tc_row_style(w, st, i, foc)
+        rst = ManyUI._tc_row_style(w, st, i, foc)
         reached = _tc_paint_slice!(buf, row, width, off.x,
                                    w.format(w.items[i]), rst)
         w.widest = max(w.widest, reached)
         (is_selected(w.sel, i) || (foc && w.sel.cursor == i)) &&
             style_region!(buf, Region(1, row, width, 1),
-                          _tc_bar_style(w.sel, i, foc))
+                          ManyUI._tc_bar_style(w.sel, i, foc))
     end
     return nothing
 end
@@ -118,11 +118,11 @@ function render!(w::Checkbox, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
-    w.focused[] && (st = merge(st, CB_FOCUS))
-    write_text!(buf, 1, 1, _cb_glyph(w.state[]), st)
+    w.focused[] && (st = merge(st, ManyUI.CB_FOCUS))
+    write_text!(buf, 1, 1, ManyUI._cb_glyph(w.state[]), st)
     lbl = w.label[]
     isempty(lbl) ||
-        _tc_slice!(buf, CB_WIDTH + CB_GAP + 1, 1, width, lbl, st)
+        _tc_slice!(buf, ManyUI.CB_WIDTH + ManyUI.CB_GAP + 1, 1, width, lbl, st)
     return nothing
 end
 function render!(w::RadioGroup, buf::AbstractMatrix{Cell})::Nothing
@@ -135,11 +135,11 @@ function render!(w::RadioGroup, buf::AbstractMatrix{Cell})::Nothing
     n = length(w.options)
     for row in 1:height
         row > n && break
-        rst = (foc && row == cur) ? merge(st, CB_FOCUS) : st
-        write_text!(buf, 1, row, sel == row ? RB_ON : RB_OFF, rst)
+        rst = (foc && row == cur) ? merge(st, ManyUI.CB_FOCUS) : st
+        write_text!(buf, 1, row, sel == row ? ManyUI.RB_ON : ManyUI.RB_OFF, rst)
         cap = w.options[row]
         isempty(cap) ||
-            _tc_slice!(buf, CB_WIDTH + CB_GAP + 1, row, width, cap, rst)
+            _tc_slice!(buf, ManyUI.CB_WIDTH + ManyUI.CB_GAP + 1, row, width, cap, rst)
     end
     return nothing
 end
@@ -149,14 +149,14 @@ function render!(w::TabStrip, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
-    w.focused[] && (st = merge(st, TABS_FOCUS))
+    w.focused[] && (st = merge(st, ManyUI.TABS_FOCUS))
     sel = w.selected[]
     x = 1
     for (i, title) in enumerate(w.titles)
-        cap = " "^TABS_PAD * title * " "^TABS_PAD
-        cst = i == sel ? merge(st, TABS_ACTIVE) : st
+        cap = " "^ManyUI.TABS_PAD * title * " "^ManyUI.TABS_PAD
+        cst = i == sel ? merge(st, ManyUI.TABS_ACTIVE) : st
         _tc_slice!(buf, x, 1, width, cap, cst)
-        x += text_width(title) + 2 * TABS_PAD
+        x += text_width(title) + 2 * ManyUI.TABS_PAD
         x > width && break
     end
     return nothing
@@ -166,8 +166,8 @@ end
 function render!(w::TreeView, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
-    _tv_flat!(w)
-    _tc_sync!(w)
+    ManyUI._tv_flat!(w)
+    ManyUI._tc_sync!(w)
     st = computed_style(w)
     off = scroll_of(w)
     n = length(w.rows)
@@ -181,16 +181,16 @@ function render!(w::TreeView, buf::AbstractMatrix{Cell})::Nothing
         # `List.render!`'s guard, verbatim (list.jl:342).
         (1 <= i <= n) || break
         r = w.rows[i]
-        rst = _tc_row_style(w, st, i, foc)
-        ind = TV_INDENT * r.depth
-        g = is_leaf(r.node) ? TV_LEAF :
-            r.node.expanded ? TV_OPEN : TV_CLOSED
+        rst = ManyUI._tc_row_style(w, st, i, foc)
+        ind = ManyUI.TV_INDENT * r.depth
+        g = is_leaf(r.node) ? ManyUI.TV_LEAF :
+            r.node.expanded ? ManyUI.TV_OPEN : ManyUI.TV_CLOSED
         _tc_slice!(buf, 1 + ind - off.x, row, width, g, rst)
-        _tc_slice!(buf, 1 + ind + 1 + TV_GAP - off.x, row, width,
+        _tc_slice!(buf, 1 + ind + 1 + ManyUI.TV_GAP - off.x, row, width,
                    w.format(r.node.value), rst)
         (is_selected(w.sel, i) || (foc && w.sel.cursor == i)) &&
             style_region!(buf, Region(1, row, width, 1),
-                          _tc_bar_style(w.sel, i, foc))
+                          ManyUI._tc_bar_style(w.sel, i, foc))
     end
     return nothing
 end
@@ -200,16 +200,15 @@ function render!(w::DropDown, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
-    w.focused[] && (st = merge(st, DD_FOCUS))
-    _tc_slice!(buf, 1, 1, width - DD_ARROW_W, _dd_caption(w), st)
-    arrow = w.open[] ? DD_OPEN : DD_CLOSED
+    w.focused[] && (st = merge(st, ManyUI.DD_FOCUS))
+    _tc_slice!(buf, 1, 1, width - ManyUI.DD_ARROW_W, ManyUI._dd_caption(w), st)
+    arrow = w.open[] ? ManyUI.DD_OPEN : ManyUI.DD_CLOSED
     write_text!(buf, width, 1, arrow, st)
     return nothing
 end
 
 # --- from widgets/table.jl ---
-render!(w::Table, buf::AbstractMatrix{Cell})::Nothing =
-
+render!(w::Table, buf::AbstractMatrix{Cell})::Nothing = _tc_render_table!(w, buf)
 # --- from widgets/tablecore.jl ---
 function _tc_slice!(buf::AbstractMatrix{Cell}, x::Int, y::Int,
                     width::Int, s::AbstractString, st::Style)::Int
@@ -237,10 +236,10 @@ function _tc_put!(buf::AbstractMatrix{Cell}, x0::Int, y::Int, cw::Int,
     cw <= 0 && return nothing
     width = size(buf, 1)
     t = truncate_width(text, cw)
-    if _tc_truncated(t, text)
+    if ManyUI._tc_truncated(t, text)
         # LEFT-ANCHORED, whatever `align` says, and the marker last.
         _tc_slice!(buf, x0, y, width, truncate_width(text, cw - 1), st)
-        set_cell!(buf, x0 + cw - 1, y, Cell(TC_ELLIPSIS, st))
+        set_cell!(buf, x0 + cw - 1, y, Cell(ManyUI.TC_ELLIPSIS, st))
         return nothing
     end
     lead = first(cross_align(text_width(t), align, cw))
@@ -271,19 +270,19 @@ function _tc_render_table!(w::W,
                           {W<:RowsWidget}
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
-    _tc_sync!(w)
+    ManyUI._tc_sync!(w)
     g = grid_of(w)
-    ws = _tc_resolve!(w, width)              # O(1) on a hit, 0 alloc
-    hh = _tc_header_rows(w)
+    ws = ManyUI._tc_resolve!(w, width)              # O(1) on a hit, 0 alloc
+    hh = ManyUI._tc_header_rows(w)
     off = scroll_of(w)
     n = view_count(w)
     st = computed_style(w)
-    lo, hi = _tc_visible_cols(g, off.x, width)
+    lo, hi = ManyUI._tc_visible_cols(g, off.x, width)
     if g.show_header && hh >= 1
-        hst = merge(st, TC_HEADER)
+        hst = merge(st, ManyUI.TC_HEADER)
         for j in lo:hi
             ws[j] > 0 && _tc_put!(buf, g.xs[j] - off.x + 1, 1, ws[j],
-                                  _tc_header_text(w, j),
+                                  ManyUI._tc_header_text(w, j),
                                   g.cols[j].align, hst)
         end
         g.rule && _tc_rule!(buf, hh, width, g.rule_glyph, st)
@@ -299,16 +298,16 @@ function _tc_render_table!(w::W,
         (1 <= k <= n) || break
         y = hh + r
         src = view_source(w, k)
-        rst = _tc_row_style(w, st, src, foc)
+        rst = ManyUI._tc_row_style(w, st, src, foc)
         for j in lo:hi
             ws[j] > 0 && _tc_put!(buf, g.xs[j] - off.x + 1, y, ws[j],
-                                  _tc_cell_text(w, src, j),
+                                  ManyUI._tc_cell_text(w, src, j),
                                   g.cols[j].align, rst)
         end
         _tc_seps!(buf, g, ws, lo, hi, off.x, y, rst, width)
         (is_selected(s, src) || (foc && s.cursor === src)) &&
             style_region!(buf, Region(1, y, width, 1),
-                          _tc_bar_style(s, src, foc))
+                          ManyUI._tc_bar_style(s, src, foc))
     end
     return nothing
 end
@@ -338,12 +337,12 @@ function render!(w::TextArea, buf::AbstractMatrix{Cell})::Nothing
     w.focused[] || return nothing
     cy = w.line - off.y
     (1 <= cy <= height) || return nothing
-    cx = _ta_cells_before(w.lines[w.line], w.col) - off.x + 1
+    cx = ManyUI._ta_cells_before(w.lines[w.line], w.col) - off.x + 1
     (1 <= cx <= width) || return nothing
     # The caret reverses the cell it sits on -- the HEAD of a wide
     # cluster, whose continuation stays a continuation, so the grid
     # never desynchronises.
-    style_region!(buf, Region(cx, cy, 1, 1), _TA_CARET)
+    style_region!(buf, Region(cx, cy, 1, 1), ManyUI._TA_CARET)
     return nothing
 end
 
@@ -368,7 +367,7 @@ end
 function render!(w::MinSizeOverlay, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
-    _ov_block!(buf, (w.message[], _ov_dims(w.required[], w.actual[])),
+    _ov_block!(buf, (w.message[], ManyUI._ov_dims(w.required[], w.actual[])),
                width, height, computed_style(w))
     return nothing
 end
@@ -377,27 +376,27 @@ function render_min_size_overlay!(buf::Buffer, actual::Size,
     clear!(buf)
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
-    dims = _ov_dims(required, actual)
-    msg_w = text_width(OVERLAY_MESSAGE)
+    dims = ManyUI._ov_dims(required, actual)
+    msg_w = text_width(ManyUI.OVERLAY_MESSAGE)
     st = STYLE_NONE
     if height >= 2 && width >= max(msg_w, text_width(dims))
-        _ov_block!(buf, (OVERLAY_MESSAGE, dims), width, height, st)
+        _ov_block!(buf, (ManyUI.OVERLAY_MESSAGE, dims), width, height, st)
     elseif width >= msg_w
-        _ov_block!(buf, (OVERLAY_MESSAGE,), width, height, st)
-    elseif width >= text_width(OVERLAY_TINY_MESSAGE)
-        _ov_block!(buf, (OVERLAY_TINY_MESSAGE,), width, height, st)
+        _ov_block!(buf, (ManyUI.OVERLAY_MESSAGE,), width, height, st)
+    elseif width >= text_width(ManyUI.OVERLAY_TINY_MESSAGE)
+        _ov_block!(buf, (ManyUI.OVERLAY_TINY_MESSAGE,), width, height, st)
     end
     return nothing
 end
 
-# --- from widgets/datatable.jl ---
-render!(w::DataTable, buf::AbstractMatrix{Cell})::Nothing =
+render!(w::DataTable, buf::AbstractMatrix{Cell})::Nothing = _tc_render_table!(w, buf)
 
 """
 Write one cell of the bar, in the bar's own long-axis coordinate.
 Internal.
 """
-_sb_put!(w::Scrollbar, buf::AbstractMatrix{Cell}, i::Int,
-         g::AbstractString, st::Style)::Int =
+function _sb_put!(w::Scrollbar, buf::AbstractMatrix{Cell}, i::Int,
+         g::AbstractString, st::Style)::Int
     w.axis === ScrollAxis.VERTICAL ? set_cell!(buf, 1, i, g, st) :
                                      set_cell!(buf, i, 1, g, st)
+end

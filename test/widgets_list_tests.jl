@@ -889,7 +889,7 @@ end
         dispatch_event!(l, MouseEvent(MouseAction.PRESS, b, 1, 1, m))
 
     @test wheel(MouseButton.WHEEL_DOWN)
-    @test scroll_of(l) === Offset(0, ManyUITUI.TC_WHEEL_STEP)
+    @test scroll_of(l) === Offset(0, ManyUI.TC_WHEEL_STEP)
     @test row_cursor(l) == 1            # the wheel does NOT move it
     @test wheel(MouseButton.WHEEL_UP)
     @test scroll_of(l) === ORIGIN
@@ -912,7 +912,7 @@ end
     @test dispatch_event!(wide, MouseEvent(MouseAction.PRESS,
                                            MouseButton.WHEEL_DOWN, 1, 1,
                                            shift))
-    @test scroll_of(wide) === Offset(ManyUITUI.TC_WHEEL_STEP_X, 0)
+    @test scroll_of(wide) === Offset(ManyUI.TC_WHEEL_STEP_X, 0)
 end
 
 @testitem "list: the selection survives a scroll" begin
@@ -1461,15 +1461,15 @@ end
     paint!(buf, root)
     col = [buf[6, y].content for y in 1:4]
     # track 4, view 4, total 20 -> a 1-cell thumb pinned to the top.
-    @test col[1] == ManyUITUI.SB_THUMB
-    @test all(==(ManyUITUI.SB_TRACK_V), col[2:4])
+    @test col[1] == ManyUI.SB_THUMB
+    @test all(==(ManyUI.SB_TRACK_V), col[2:4])
 
     scroll_to!(l, Offset(0, 16))
     clear!(buf)
     paint!(buf, root)
     col = [buf[6, y].content for y in 1:4]
-    @test col[4] == ManyUITUI.SB_THUMB     # pinned to the BOTTOM
-    @test all(==(ManyUITUI.SB_TRACK_V), col[1:3])
+    @test col[4] == ManyUI.SB_THUMB     # pinned to the BOTTOM
+    @test all(==(ManyUI.SB_TRACK_V), col[1:3])
 end
 
 @testitem "list: Scrollpane(List(...)) composes" begin

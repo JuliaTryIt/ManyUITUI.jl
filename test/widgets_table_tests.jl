@@ -964,10 +964,10 @@ end
     clear!(buf)
     paint!(buf, bar)
     @test hits[] == 0
-    @test occursin(ManyUITUI.SB_THUMB, string(buf))
+    @test occursin(ManyUI.SB_THUMB, string(buf))
     # At the bottom the thumb is pinned to the LAST cell of the track --
     # `thumb_span`'s two verifiable ends, over a `Table`, unchanged.
-    @test buf[1, 11].content == ManyUITUI.SB_THUMB
+    @test buf[1, 11].content == ManyUI.SB_THUMB
 
     # The HORIZONTAL bar reports on the same seam, from `cache_total`.
     h = Scrollbar(t, ScrollAxis.HORIZONTAL)

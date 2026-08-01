@@ -80,7 +80,7 @@ end
     # shrink its neighbours to zero. It is exactly as wide as its
     # captions and exactly one row tall.
     @test m.width < 80
-    @test m.width == (3 + 2 * ManyUITUI.TABS_PAD) * 2   # " One " + " Two "
+    @test m.width == (3 + 2 * ManyUI.TABS_PAD) * 2   # " One " + " Two "
     @test m.height == 1
 end
 

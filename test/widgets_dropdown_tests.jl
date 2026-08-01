@@ -22,7 +22,7 @@
     # measure sizes to the WIDEST option plus the arrow, NEVER `avail`:
     # a greedy measure would shrink a Label beside it to zero rows.
     m = measure(dd, Size(80, 24))
-    @test m == Size(text_width("Medium") + ManyUITUI.DD_ARROW_W, 1)
+    @test m == Size(text_width("Medium") + ManyUI.DD_ARROW_W, 1)
     @test m != Size(80, 24)
 
     # The panel is NOT a child of the DropDown and NOT in the tab order;
@@ -40,9 +40,9 @@ end
     using ManyUI, ManyUITUI
     # This is what licenses `open`'s PAINT reactivity: the arrow flips a
     # single cell and can never move the box.
-    @test text_width(ManyUITUI.DD_CLOSED) == 1
-    @test text_width(ManyUITUI.DD_OPEN) == 1
-    @test ManyUITUI.DD_ARROW_W == 2
+    @test text_width(ManyUI.DD_CLOSED) == 1
+    @test text_width(ManyUI.DD_OPEN) == 1
+    @test ManyUI.DD_ARROW_W == 2
 end
 
 @testitem "dropdown: the closed head paints caption then arrow" begin
@@ -57,7 +57,7 @@ end
     @test string(buf) == "pick   v"
 
     # A committed selection replaces the placeholder; the arrow stays.
-    @test ManyUITUI._dd_select!(dd, 2)
+    @test ManyUI._dd_select!(dd, 2)
     clear!(buf)
     render!(dd, buf)
     @test string(buf) == "Medium v"
@@ -66,7 +66,7 @@ end
 @testitem "dropdown: an empty option list paints an arrow and cannot open" begin
     using ManyUI, ManyUITUI
     dd = DropDown(String[])
-    @test measure(dd, Size(20, 4)) == Size(ManyUITUI.DD_ARROW_W, 1)
+    @test measure(dd, Size(20, 4)) == Size(ManyUI.DD_ARROW_W, 1)
     apply_stylesheet!(STYLESHEET_EMPTY, dd)
     layout!(dd, Region(1, 1, 2, 1))
     buf = Buffer(2, 1)
@@ -123,10 +123,10 @@ end
     dd = DropDown(["Small", "Medium", "Large"])
     marker = List(fill("XXXXXXXX", 9))          # fills every row below
     root = Container(dd, marker)
-    ManyUITUI._sp_box!(root, ManyUITUI.BoxPatch(; display = Display.FLEX,
+    ManyUI._sp_box!(root, ManyUITUI.BoxPatch(; display = Display.FLEX,
                                           direction = Direction.COLUMN))
-    ManyUITUI._sp_box!(dd, ManyUITUI.BoxPatch(; shrink = 0f0, grow = 0f0))
-    ManyUITUI._sp_box!(marker, ManyUITUI.BoxPatch(; grow = 1f0))
+    ManyUI._sp_box!(dd, ManyUITUI.BoxPatch(; shrink = 0f0, grow = 0f0))
+    ManyUI._sp_box!(marker, ManyUITUI.BoxPatch(; grow = 1f0))
     ap = App(root, HeadlessDriver(Size(24, 8)))
     frame!(ap)
     below = split(string(ap.back), '\n')
@@ -237,11 +237,11 @@ end
     dd = DropDown(["Small", "Medium", "Large"])
     btn = Button("go", _ -> clicks[] += 1)
     root = Container(dd, btn)
-    ManyUITUI._sp_box!(root, ManyUITUI.BoxPatch(; display = Display.FLEX,
+    ManyUI._sp_box!(root, ManyUITUI.BoxPatch(; display = Display.FLEX,
                                           direction = Direction.COLUMN))
-    ManyUITUI._sp_box!(dd, ManyUITUI.BoxPatch(; shrink = 0f0, grow = 0f0))
+    ManyUI._sp_box!(dd, ManyUITUI.BoxPatch(; shrink = 0f0, grow = 0f0))
     # push the button to the very bottom, clear of the popup.
-    ManyUITUI._sp_box!(btn, ManyUITUI.BoxPatch(; grow = 1f0))
+    ManyUI._sp_box!(btn, ManyUITUI.BoxPatch(; grow = 1f0))
     ap = App(root, HeadlessDriver(Size(24, 12)))
     frame!(ap)
     set_open!(dd, true)
@@ -281,10 +281,10 @@ end
     dd = DropDown(["Small", "Medium", "Large"])
     spacer = List(fill("....", 20))
     root = Container(spacer, dd)   # dd is the LAST row
-    ManyUITUI._sp_box!(root, ManyUITUI.BoxPatch(; display = Display.FLEX,
+    ManyUI._sp_box!(root, ManyUITUI.BoxPatch(; display = Display.FLEX,
                                           direction = Direction.COLUMN))
-    ManyUITUI._sp_box!(spacer, ManyUITUI.BoxPatch(; grow = 1f0))
-    ManyUITUI._sp_box!(dd, ManyUITUI.BoxPatch(; shrink = 0f0, grow = 0f0))
+    ManyUI._sp_box!(spacer, ManyUITUI.BoxPatch(; grow = 1f0))
+    ManyUI._sp_box!(dd, ManyUITUI.BoxPatch(; shrink = 0f0, grow = 0f0))
     ap = App(root, HeadlessDriver(Size(24, 8)))
     frame!(ap)
     hr = ManyUITUI.region(dd)
@@ -306,7 +306,7 @@ end
     dd1 = DropDown(["a", "b"])
     dd2 = DropDown(["c", "d"])
     root = Container(dd1, dd2)
-    ManyUITUI._sp_box!(root, ManyUITUI.BoxPatch(; display = Display.FLEX,
+    ManyUI._sp_box!(root, ManyUITUI.BoxPatch(; display = Display.FLEX,
                                           direction = Direction.COLUMN))
     ap = App(root, HeadlessDriver(Size(24, 12)))
     frame!(ap)
@@ -347,7 +347,7 @@ end
     dd = DropDown(["Small", "Medium", "Large"])
     ap = App(Container(dd), HeadlessDriver(Size(20, 10)))
     frame!(ap)
-    @test ManyUITUI._dd_select!(dd, 3)
+    @test ManyUI._dd_select!(dd, 3)
     @test selected(dd) == 3
     set_open!(dd, true)
     @test is_open(dd)
@@ -358,7 +358,7 @@ end
     @test options(dd) == ["Tiny", "Enormous"]
     # measure now reflects the new widest option.
     @test measure(dd, Size(80, 24)) ==
-          Size(text_width("Enormous") + ManyUITUI.DD_ARROW_W, 1)
+          Size(text_width("Enormous") + ManyUI.DD_ARROW_W, 1)
 end
 
 @testitem "dropdown: TAB is left unconsumed so the tab order survives" begin

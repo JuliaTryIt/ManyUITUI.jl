@@ -41,16 +41,16 @@ end
     @test id(RadioGroup(["a"]; id = :rg)) === :rg
 end
 
-@testitem "toggle: all five glyphs are exactly CB_WIDTH cells" begin
+@testitem "toggle: all five glyphs are exactly ManyUI.CB_WIDTH cells" begin
     using ManyUI, ManyUITUI
     # LOAD-BEARING, not tidiness: equal widths are what make `measure`
     # independent of `state`, which is what LICENSES `state`'s
     # `Dirty.PAINT` reactivity. A width-1 "check" against a width-3
     # "[ ]" would make a click a LAYOUT pass.
-    @test ManyUITUI.CB_WIDTH == 3
-    for g in (ManyUITUI.CB_UNCHECKED, ManyUITUI.CB_CHECKED, ManyUITUI.CB_MIXED,
-              ManyUITUI.RB_ON, ManyUITUI.RB_OFF)
-        @test text_width(g) == ManyUITUI.CB_WIDTH
+    @test ManyUI.CB_WIDTH == 3
+    for g in (ManyUI.CB_UNCHECKED, ManyUI.CB_CHECKED, ManyUI.CB_MIXED,
+              ManyUITUI.ManyUI.RB_ON, ManyUITUI.ManyUI.RB_OFF)
+        @test text_width(g) == ManyUI.CB_WIDTH
     end
 end
 
@@ -236,9 +236,9 @@ end
     # A `measure` returning `avail` would make a one-row Label beside a
     # checkbox into a ZERO-row label and vanish it.
     huge = Size(500, 40)
-    @test measure(Checkbox(""), huge) == Size(ManyUITUI.CB_WIDTH, 1)
+    @test measure(Checkbox(""), huge) == Size(ManyUI.CB_WIDTH, 1)
     m = measure(Checkbox("Accept"), huge)
-    @test m == Size(ManyUITUI.CB_WIDTH + ManyUITUI.CB_GAP +
+    @test m == Size(ManyUI.CB_WIDTH + ManyUI.CB_GAP +
                     text_width("Accept"), 1)
     @test m != huge
 end
@@ -489,7 +489,7 @@ end
     huge = Size(500, 40)
     rg = RadioGroup(["A", "Medium", "C"])
     m = measure(rg, huge)
-    @test m == Size(ManyUITUI.CB_WIDTH + ManyUITUI.CB_GAP +
+    @test m == Size(ManyUI.CB_WIDTH + ManyUI.CB_GAP +
                     text_width("Medium"), 3)
     @test m != huge
 end

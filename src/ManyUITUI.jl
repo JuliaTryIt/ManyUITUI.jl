@@ -1,9 +1,10 @@
 module ManyUITUI
 
 using ManyUI
-import ManyUI: Event, Widget
+import ManyUI: Event, Widget, post!, focus!, popup_of, open_popup!, close_popup!, on_popup_close!
 using InlineStrings
 using DocStringExtensions, REPL, Unicode
+import Base: resize!
 
 include("types.jl")
 include("buffer.jl")
@@ -40,7 +41,7 @@ export TerminalDriver, detect_caps, set_raw!
 export AppConfig, App, run!, quit!, exit!, post!
 export call_later!, set_interval!, invalidate!, pause!, resume!
 export handle!, frame!, refresh!
-export focused, focus!, focus_next!, focus_prev!, bind!, on_action
+export focused, focus!, focus_next!, focus_prev!, bind!, on_action, popup_of, open_popup!, close_popup!
 export Backend, TerminalBackend, HeadlessBackend, make_driver, launch
 
 end

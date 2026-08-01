@@ -654,8 +654,8 @@ end
     clear!(buf2)
     paint!(buf2, over)
     s = string(buf2)
-    @test occursin(ManyUITUI.SB_THUMB, s)
-    @test occursin(ManyUITUI.SB_TRACK_V, s)
+    @test occursin(ManyUI.SB_THUMB, s)
+    @test occursin(ManyUI.SB_TRACK_V, s)
 end
 
 @testitem "scroll: ScrollMode.ALWAYS draws a full thumb when it fits" begin
@@ -667,7 +667,7 @@ end
     buf = Buffer(4, 3)
     clear!(buf)
     paint!(buf, pane)
-    t = ManyUITUI.SB_THUMB
+    t = ManyUI.SB_THUMB
     # "All of it is visible" drawn honestly: the thumb fills the track.
     @test string(buf) == "a  $t\nb  $t\n   $t"
 end
@@ -698,7 +698,7 @@ end
     using ManyUI, ManyUITUI
     # A width-2 glyph in a 1-cell gutter would desynchronise every
     # column to its right, exactly as a width-2 border glyph would.
-    for g in (ManyUITUI.SB_TRACK_V, ManyUITUI.SB_TRACK_H, ManyUITUI.SB_THUMB)
+    for g in (ManyUI.SB_TRACK_V, ManyUI.SB_TRACK_H, ManyUI.SB_THUMB)
         @test text_width(g) == 1
         @test grapheme_width(g) == 1
         @test length(collect(Base.Unicode.graphemes(g))) == 1
@@ -716,7 +716,7 @@ end
     vp = viewport(pane)
     @test layout_of(vp).content.width == 5
 
-    t = ManyUITUI.SB_THUMB
+    t = ManyUI.SB_THUMB
     for off in 0:max_scroll(vp).x
         scroll_to!(vp, Offset(off, 0))
         buf = Buffer(6, 2)
@@ -788,16 +788,16 @@ end
     paint!(buf, root)
     col = [buf[9, y].content for y in 1:4]
     # track 4, view 4, total 8 -> a 2-cell thumb pinned to the top.
-    @test col == [ManyUITUI.SB_THUMB, ManyUITUI.SB_THUMB,
-                  ManyUITUI.SB_TRACK_V, ManyUITUI.SB_TRACK_V]
+    @test col == [ManyUI.SB_THUMB, ManyUI.SB_THUMB,
+                  ManyUI.SB_TRACK_V, ManyUI.SB_TRACK_V]
 
     scroll_to!(canvas, Offset(0, 4))     # the maximum
     clear!(buf)
     paint!(buf, root)
     col2 = [buf[9, y].content for y in 1:4]
     # At the maximum the thumb is pinned to the LAST cell.
-    @test col2 == [ManyUITUI.SB_TRACK_V, ManyUITUI.SB_TRACK_V,
-                   ManyUITUI.SB_THUMB, ManyUITUI.SB_THUMB]
+    @test col2 == [ManyUI.SB_TRACK_V, ManyUI.SB_TRACK_V,
+                   ManyUI.SB_THUMB, ManyUI.SB_THUMB]
 end
 
 @testitem "scroll: a Scrollbar jumps the viewport on a LEFT press" begin
@@ -930,15 +930,15 @@ end
     paint!(buf, pane)
     row = [buf[x, 3].content for x in 1:5]
     # track 5, view 5, total 20 -> a 1-cell thumb pinned to the left.
-    @test row[1] == ManyUITUI.SB_THUMB
-    @test all(==(ManyUITUI.SB_TRACK_H), row[2:5])
+    @test row[1] == ManyUI.SB_THUMB
+    @test all(==(ManyUI.SB_TRACK_H), row[2:5])
 
     scroll_to!(vp, Offset(15, 0))
     clear!(buf)
     paint!(buf, pane)
     row2 = [buf[x, 3].content for x in 1:5]
-    @test row2[5] == ManyUITUI.SB_THUMB
-    @test all(==(ManyUITUI.SB_TRACK_H), row2[1:4])
+    @test row2[5] == ManyUI.SB_THUMB
+    @test all(==(ManyUI.SB_TRACK_H), row2[1:4])
 end
 
 @testitem "scroll: the public API scrolls the pane, not its shell" begin

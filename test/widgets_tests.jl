@@ -395,47 +395,47 @@ end
     @test o2.message[] == "Bigger please"
 end
 
-@testitem "overlay: render_min_size_overlay! degrades in three steps" begin
+@testitem "overlay: ManyUITUI.render_min_size_overlay! degrades in three steps" begin
     using ManyUI, ManyUITUI
     # 1. message + dimensions
     big = Buffer(40, 3)
-    render_min_size_overlay!(big, Size(40, 3), Size(80, 24))
+    ManyUITUI.render_min_size_overlay!(big, Size(40, 3), Size(80, 24))
     s = string(big)
     @test occursin("Increase Terminal Size", s)
     @test occursin("Need 80x24 - have 40x3", s)
 
     # 2. message only -- one row is not enough for two lines
     med = Buffer(24, 1)
-    render_min_size_overlay!(med, Size(24, 1), Size(80, 24))
+    ManyUITUI.render_min_size_overlay!(med, Size(24, 1), Size(80, 24))
     s = string(med)
     @test occursin("Increase Terminal Size", s)
     @test !occursin("Need", s)
 
     # 3. "Too small" -- the message no longer fits
     small = Buffer(10, 1)
-    render_min_size_overlay!(small, Size(10, 1), Size(80, 24))
+    ManyUITUI.render_min_size_overlay!(small, Size(10, 1), Size(80, 24))
     @test occursin("Too small", string(small))
 
     # 4. nothing at all, and still not a throw
     tiny = Buffer(4, 1)
-    render_min_size_overlay!(tiny, Size(4, 1), Size(80, 24))
+    ManyUITUI.render_min_size_overlay!(tiny, Size(4, 1), Size(80, 24))
     @test string(tiny) == string(Buffer(4, 1))
 
     empty = Buffer(0, 0)
-    @test render_min_size_overlay!(empty, Size(0, 0), Size(80, 24)) ===
+    @test ManyUITUI.render_min_size_overlay!(empty, Size(0, 0), Size(80, 24)) ===
           nothing
 end
 
-@testitem "overlay: render_min_size_overlay! clears what it paints over" begin
+@testitem "overlay: ManyUITUI.render_min_size_overlay! clears what it paints over" begin
     using ManyUI, ManyUITUI
     buf = Buffer(40, 3)
     fill!(buf, Cell("x"))
-    render_min_size_overlay!(buf, Size(40, 3), Size(80, 24))
+    ManyUITUI.render_min_size_overlay!(buf, Size(40, 3), Size(80, 24))
     @test !occursin("xxxx", string(buf))
     @test occursin("Increase Terminal Size", string(buf))
 end
 
-@testitem "overlay: render_min_size_overlay! calls no layout" begin
+@testitem "overlay: ManyUITUI.render_min_size_overlay! calls no layout" begin
     using ManyUI, ManyUITUI
     # X2: the tree-free path exists precisely because layout is
     # meaningless below OVERLAY_MIN_SIZE. Assert it structurally.
@@ -455,7 +455,7 @@ end
         end
         return nothing
     end
-    for ci in code_lowered(render_min_size_overlay!,
+    for ci in code_lowered(ManyUITUI.render_min_size_overlay!,
                            (Buffer, Size, Size))
         for st in ci.code
             walkexpr(st)

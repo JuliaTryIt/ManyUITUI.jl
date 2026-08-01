@@ -5,7 +5,7 @@
 #
 # NOTHING here constructs a List, a Table or a DataTable, and that is
 # the whole point of the tier split: `Selection` is four Ints and a
-# BitSet, `ManyUI._tc_resolve_now!` is a TableGrid and an Int, and `ManyUI._tc_put!`
+# BitSet, `ManyUI._tc_resolve_now!` is a TableGrid and an Int, and `ManyUITUI._tc_put!`
 # is a Buffer -- so the entire shared core is a TABLE TEST, exactly as
 # `thumb_span` (scroll.jl:572) is one.
 #
@@ -691,7 +691,7 @@ end
     @test w == [5, 9]
 
     # 6. A COLUMN NARROWER THAN ITS CONTENT STAYS NARROW. Sizing is a
-    #    policy about the COLUMN; fitting the text is `ManyUI._tc_put!`'s job,
+    #    policy about the COLUMN; fitting the text is `ManyUITUI._tc_put!`'s job,
     #    and it truncates with an ellipsis rather than widening.
     w, _, _ = resolve([Column("A very long header"; width = cells(3)),
                        Column("B"; width = cells(2))], 40)
@@ -888,9 +888,9 @@ end
     @test ManyUI._tc_noop(Container()) === nothing
 end
 
-@testitem "tablecore: ManyUI._tc_put! truncates on a grapheme boundary" begin
+@testitem "tablecore: ManyUITUI._tc_put! truncates on a grapheme boundary" begin
     using ManyUI, ManyUITUI
-    put! = ManyUI._tc_put!
+    put! = ManyUITUI._tc_put!
     txt(b) = String(strip(string(b)))
 
     # ASCII.
@@ -930,13 +930,13 @@ end
     @test is_continuation(b[2, 1])
 end
 
-@testitem "tablecore: ManyUI._tc_put! never halves a cluster at a column edge" begin
+@testitem "tablecore: ManyUITUI._tc_put! never halves a cluster at a column edge" begin
     using ManyUI, ManyUITUI
     # A CLUSTER CANNOT STRADDLE A COLUMN EDGE BY CONSTRUCTION:
     # `truncate_width` DROPS a width-2 cluster that would straddle the
     # cap, and `cross_align` places the result inside
     # `0 : cw - text_width(t)`. There is no second guard to write.
-    put! = ManyUI._tc_put!
+    put! = ManyUITUI._tc_put!
 
     # A width-2 cluster in an ODD-width column leaves a one-cell gap --
     # the correct rendering of "it does not fit".
@@ -966,14 +966,14 @@ end
     end
 end
 
-@testitem "tablecore: ManyUI._tc_put! never halves a cluster at a frame edge" begin
+@testitem "tablecore: ManyUITUI._tc_put! never halves a cluster at a frame edge" begin
     using ManyUI, ManyUITUI
     # LEFT: `x0` MAY BE <= 0 -- a column scrolled off the left is a
     # NEGATIVE start, exactly as `TextInput.render!` hands `write_text!`
     # a negative `1 - off`. A cluster landing at `cx < 1` is skipped
     # WHOLE, so `set_cell!` never sees the half that would orphan a
     # continuation into column 1.
-    put! = ManyUI._tc_put!
+    put! = ManyUITUI._tc_put!
     b = Buffer(6, 1)
     put!(b, 0, 1, 6, "世界ab", Align.START, STYLE_NONE)
     # The first cluster starts at frame column 0 and STRADDLES the edge:
@@ -1005,12 +1005,12 @@ end
     @test string(b) == "      "
 end
 
-@testitem "tablecore: ManyUI._tc_put! in a 1-cell column holding CJK" begin
+@testitem "tablecore: ManyUITUI._tc_put! in a 1-cell column holding CJK" begin
     using ManyUI, ManyUITUI
     # DEGENERATE BY CONSTRUCTION, not by special case:
     # `truncate_width("世", 1) == ""` (VERIFIED), so the cell gets
     # the ellipsis ALONE -- one cell, one legible glyph, nothing halved.
-    put! = ManyUI._tc_put!
+    put! = ManyUITUI._tc_put!
     b = Buffer(4, 1)
     put!(b, 1, 1, 1, "世", Align.START, STYLE_NONE)
     @test String(b[1, 1].content) == TC_ELLIPSIS
@@ -1037,9 +1037,9 @@ end
     end
 end
 
-@testitem "tablecore: ManyUI._tc_put! ellipsis marks a truncated cell" begin
+@testitem "tablecore: ManyUITUI._tc_put! ellipsis marks a truncated cell" begin
     using ManyUI, ManyUITUI
-    put! = ManyUI._tc_put!
+    put! = ManyUITUI._tc_put!
     txt(b) = String(strip(string(b)))
 
     b = Buffer(12, 1)
@@ -1072,7 +1072,7 @@ end
     # aligned truncated number ("…234") reads as a DIFFERENT
     # NUMBER, which is worse than a visibly clipped one. This also fixes
     # the bug where an END-aligned cell paints text OVER its own marker.
-    put! = ManyUI._tc_put!
+    put! = ManyUITUI._tc_put!
     txt(b) = String(strip(string(b)))
     for a in (Align.START, Align.CENTER, Align.END, Align.STRETCH)
         b = Buffer(12, 1)
@@ -1083,14 +1083,14 @@ end
     end
 end
 
-@testitem "tablecore: ManyUI._tc_put! honours all four Align values" begin
+@testitem "tablecore: ManyUITUI._tc_put! honours all four Align values" begin
     using ManyUI, ManyUITUI
     # `cross_align` (layout.jl:163) does the placement -- REUSED, not
     # reinvented. `Align.STRETCH` degenerates to START FOR FREE, because
     # `cross_align(n, STRETCH, w)` returns `(0, w)` and a text painter
     # reads only the OFFSET. That is why there is no CellAlign enum and
     # no `ManyUI._tc_lead`.
-    put! = ManyUI._tc_put!
+    put! = ManyUITUI._tc_put!
     lay(a) = begin
         b = Buffer(9, 1)
         put!(b, 1, 1, 9, "abc", a, STYLE_NONE)
@@ -1114,13 +1114,13 @@ end
     @test string(b) == "        ab  "
 end
 
-@testitem "tablecore: ManyUI._tc_paint_slice! drops a cluster at the left edge" begin
+@testitem "tablecore: ManyUITUI._tc_paint_slice! drops a cluster at the left edge" begin
     using ManyUI, ManyUITUI
     # `TextArea.render!`'s loop (textarea.jl:239), third and last copy:
     # a cluster left of the window lands on `cx <= 0` and is skipped,
     # and one STRADDLING the edge lands there too, so `set_cell!` never
     # sees the half of it that would orphan a continuation into column 1.
-    slice! = ManyUI._tc_paint_slice!
+    slice! = ManyUITUI._tc_paint_slice!
 
     # skip = 1 cuts INTO the first wide cluster: dropped, not halved.
     b = Buffer(6, 1)
@@ -1154,13 +1154,13 @@ end
     end
 end
 
-@testitem "tablecore: ManyUI._tc_paint_slice! returns the column reached" begin
+@testitem "tablecore: ManyUITUI._tc_paint_slice! returns the column reached" begin
     using ManyUI, ManyUITUI
     # THE return value is what `List.render!` raises `widest` from, and
     # it makes the high-water mark cost the paint loop NOTHING -- no
     # second pass over the graphemes, no `text_width` on an unbounded
     # string.
-    slice! = ManyUI._tc_paint_slice!
+    slice! = ManyUITUI._tc_paint_slice!
     b = Buffer(10, 1)
 
     # It FIT: the row's FULL width.
@@ -1222,18 +1222,18 @@ end
         a in (Align.START, Align.CENTER, Align.END, Align.STRETCH)
 
         b = Buffer(W, 1)
-        ManyUI._tc_put!(b, x0, 1, cw, s, a, STYLE_NONE)
+        ManyUITUI._tc_put!(b, x0, 1, cw, s, a, STYLE_NONE)
         orphan(b) && push!(bad, (:orphan, s, x0, cw, a))
         outside(b, max(x0, 1), min(x0 + cw - 1, W)) &&
             push!(bad, (:outside, s, x0, cw, a))
     end
     @test isempty(bad)
 
-    # `ManyUI._tc_paint_slice!` obeys the same property over every skip.
+    # `ManyUITUI._tc_paint_slice!` obeys the same property over every skip.
     bad2 = Any[]
     for s in texts, skip in 0:6
         b = Buffer(W, 1)
-        ManyUI._tc_paint_slice!(b, 1, W, skip, s, STYLE_NONE)
+        ManyUITUI._tc_paint_slice!(b, 1, W, skip, s, STYLE_NONE)
         orphan(b) && push!(bad2, (s, skip))
     end
     @test isempty(bad2)
@@ -1242,7 +1242,7 @@ end
     # its continuation a continuation -- `style_region!`, never
     # `fill_region!` (buffer.jl:476).
     b = Buffer(W, 1)
-    ManyUI._tc_put!(b, 1, 1, 4, "世界", Align.START, STYLE_NONE)
+    ManyUITUI._tc_put!(b, 1, 1, 4, "世界", Align.START, STYLE_NONE)
     style_region!(b, Region(1, 1, W, 1), TC_SELECTED)
     @test !orphan(b)
     @test b[1, 1].width == Int8(2)

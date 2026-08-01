@@ -290,7 +290,7 @@ end
     # Sweep every offset: no cell is ever an orphaned continuation.
     for off in 0:8
         set_scroll!(ti, Offset(off, 0))
-        ti.cursor[] = ManyUITUI._col_at_cell(ti.text[], off)
+        ti.cursor[] = ManyUI._col_at_cell(ti.text[], off)
         clear!(buf)
         render!(ti, buf)
         for x in 1:5
@@ -695,12 +695,12 @@ end
 
     # _byte_after: 0 below the range, ncodeunits past the end, always a
     # boundary that SubString can split at.
-    @test ManyUITUI._byte_after("abc", 0) == 0
-    @test ManyUITUI._byte_after("abc", -3) == 0
-    @test ManyUITUI._byte_after("abc", 2) == 2
-    @test ManyUITUI._byte_after("abc", 99) == 3
-    @test ManyUITUI._byte_after(fam, 1) == 25
-    @test ManyUITUI._byte_after("世界", 1) == 3
+    @test ManyUI._byte_after("abc", 0) == 0
+    @test ManyUI._byte_after("abc", -3) == 0
+    @test ManyUI._byte_after("abc", 2) == 2
+    @test ManyUI._byte_after("abc", 99) == 3
+    @test ManyUI._byte_after(fam, 1) == 25
+    @test ManyUI._byte_after("世界", 1) == 3
 
     # A code-unit COUNT, never a character INDEX. `SubString(s, 1, b)`
     # would throw a StringIndexError the moment the prefix ends inside a
@@ -708,49 +708,49 @@ end
     # precaution `truncate_width` already takes.
     s = "a世👍🏽"
     for k in -1:5
-        b = ManyUITUI._byte_after(s, k)
+        b = ManyUI._byte_after(s, k)
         head = SubString(s, 1, thisind(s, b))
         tail = SubString(s, b + 1)
         @test ncodeunits(head) == b            # a whole-cluster split
         @test string(head, tail) == s          # and a lossless one
     end
-    @test_throws StringIndexError SubString(s, 1, ManyUITUI._byte_after(s, 2))
+    @test_throws StringIndexError SubString(s, 1, ManyUI._byte_after(s, 2))
 
     # _ngraphemes: clusters, never codepoints and never bytes.
-    @test ManyUITUI._ngraphemes("") == 0
-    @test ManyUITUI._ngraphemes("abc") == 3
-    @test ManyUITUI._ngraphemes("世界") == 2
-    @test ManyUITUI._ngraphemes(fam) == 1
-    @test ManyUITUI._ngraphemes("é") == 1
-    @test ManyUITUI._ngraphemes("🇫🇷") == 1
+    @test ManyUI._ngraphemes("") == 0
+    @test ManyUI._ngraphemes("abc") == 3
+    @test ManyUI._ngraphemes("世界") == 2
+    @test ManyUI._ngraphemes(fam) == 1
+    @test ManyUI._ngraphemes("é") == 1
+    @test ManyUI._ngraphemes("🇫🇷") == 1
 
     # _gindex_at: clusters ENDING at or before a byte; rounds DOWN.
-    @test ManyUITUI._gindex_at("abc", 0) == 0
-    @test ManyUITUI._gindex_at("abc", 2) == 2
-    @test ManyUITUI._gindex_at("abc", 99) == 3
-    @test ManyUITUI._gindex_at(fam, 24) == 0      # inside the cluster
-    @test ManyUITUI._gindex_at(fam, 25) == 1
-    @test ManyUITUI._gindex_at("世界", 3) == 1
-    @test ManyUITUI._gindex_at("世界", 5) == 1    # rounds DOWN
+    @test ManyUI._gindex_at("abc", 0) == 0
+    @test ManyUI._gindex_at("abc", 2) == 2
+    @test ManyUI._gindex_at("abc", 99) == 3
+    @test ManyUI._gindex_at(fam, 24) == 0      # inside the cluster
+    @test ManyUI._gindex_at(fam, 25) == 1
+    @test ManyUI._gindex_at("世界", 3) == 1
+    @test ManyUI._gindex_at("世界", 5) == 1    # rounds DOWN
 
     # _cluster_width_at: cells of the cluster after a byte; 1 at the end
     # so the caret always has a cell to sit in.
-    @test ManyUITUI._cluster_width_at("a世", 0) == 1
-    @test ManyUITUI._cluster_width_at("a世", 1) == 2
-    @test ManyUITUI._cluster_width_at("a世", 4) == 1
-    @test ManyUITUI._cluster_width_at("", 0) == 1
-    @test ManyUITUI._cluster_width_at(fam, 0) == 2
+    @test ManyUI._cluster_width_at("a世", 0) == 1
+    @test ManyUI._cluster_width_at("a世", 1) == 2
+    @test ManyUI._cluster_width_at("a世", 4) == 1
+    @test ManyUI._cluster_width_at("", 0) == 1
+    @test ManyUI._cluster_width_at(fam, 0) == 2
 
     # _col_at_cell: the inverse of "cells before the caret". It can
     # never land INSIDE a wide cluster.
-    @test ManyUITUI._col_at_cell("世界", 0) == 0
-    @test ManyUITUI._col_at_cell("世界", 1) == 0  # inside cluster 1
-    @test ManyUITUI._col_at_cell("世界", 2) == 1
-    @test ManyUITUI._col_at_cell("世界", 3) == 1  # inside cluster 2
-    @test ManyUITUI._col_at_cell("世界", 4) == 2
-    @test ManyUITUI._col_at_cell("世界", 99) == 2
-    @test ManyUITUI._col_at_cell("abc", 2) == 2
-    @test ManyUITUI._col_at_cell("abc", -1) == 0
+    @test ManyUI._col_at_cell("世界", 0) == 0
+    @test ManyUI._col_at_cell("世界", 1) == 0  # inside cluster 1
+    @test ManyUI._col_at_cell("世界", 2) == 1
+    @test ManyUI._col_at_cell("世界", 3) == 1  # inside cluster 2
+    @test ManyUI._col_at_cell("世界", 4) == 2
+    @test ManyUI._col_at_cell("世界", 99) == 2
+    @test ManyUI._col_at_cell("abc", 2) == 2
+    @test ManyUI._col_at_cell("abc", -1) == 0
 end
 
 @testitem "textinput: every grapheme test vector round-trips" begin
