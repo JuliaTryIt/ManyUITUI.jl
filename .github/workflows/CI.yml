@@ -76,7 +76,7 @@ jobs:
         shell: julia --color=yes --project=. {0}
         run: |
           using Pkg
-          deps = []
+          deps = PackageSpec[]
           push!(deps, PackageSpec(url="https://github.com/s-celles/ManyUI.jl"))
           Pkg.develop(deps)
       - uses: julia-actions/julia-buildpkg@v1
