@@ -884,7 +884,7 @@ end
     ManyUI._tc_show(s)
     @test @allocated(ManyUI._tc_show(s)) == 0
 
-    # The default `on_activate` does nothing, and returns nothing.
+    # The default `on_submit` does nothing, and returns nothing.
     @test ManyUI._tc_noop(Container()) === nothing
 end
 

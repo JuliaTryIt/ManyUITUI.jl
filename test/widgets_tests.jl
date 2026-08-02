@@ -188,7 +188,7 @@ end
     @test all(w -> w isa Button, tab)
 end
 
-@testitem "widgets: Button on_press fires on ENTER" begin
+@testitem "widgets: Button on_click fires on ENTER" begin
     using ManyUI, ManyUITUI
     fired = Ref(0)
     b = Button("OK", w -> (fired[] += 1; nothing))
@@ -231,7 +231,7 @@ end
     @test !is_consumed(d)
 end
 
-@testitem "widgets: Button on_press fires on LEFT click" begin
+@testitem "widgets: Button on_click fires on LEFT click" begin
     using ManyUI, ManyUITUI
     fired = Ref(0)
     b = Button("OK", w -> (fired[] += 1; nothing))
@@ -328,8 +328,8 @@ end
     b = Button("x", f)
     @test b isa Button{typeof(f)}
     @test isconcretetype(typeof(b))
-    @test fieldtype(typeof(b), :on_press) === typeof(f)
-    @test isconcretetype(fieldtype(typeof(b), :on_press))
+    @test fieldtype(typeof(b), :on_click) === typeof(f)
+    @test isconcretetype(fieldtype(typeof(b), :on_click))
     @test isconcretetype(fieldtype(typeof(b), :label))
     @test isconcretetype(fieldtype(typeof(b), :pressed))
     @test isconcretetype(fieldtype(Label, :text))

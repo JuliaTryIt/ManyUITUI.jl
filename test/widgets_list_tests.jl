@@ -519,7 +519,7 @@ end
     @test row_cursor(l) == 1
 end
 
-@testitem "list: ENTER fires on_activate and TAB falls through" begin
+@testitem "list: ENTER fires on_submit and TAB falls through" begin
     using ManyUI, ManyUITUI
     fired = Ref(0)
     seen = Ref{Any}(nothing)
@@ -554,10 +554,10 @@ end
     @test row_cursor(l) == 1
 end
 
-@testitem "list: the default on_activate does nothing" begin
+@testitem "list: the default on_submit does nothing" begin
     using ManyUI, ManyUITUI
     l = List(["a"])
-    @test l.on_activate === ManyUI._tc_noop
+    @test l.on_submit === ManyUI._tc_noop
     d = Dispatch(parse(KeyEvent, "enter"), l)
     d.phase = Phase.AT_TARGET
     on_event!(l, d)

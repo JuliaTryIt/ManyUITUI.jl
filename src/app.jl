@@ -121,6 +121,8 @@ function App(root::Widget, driver::D;
                Timer[])
     bind!(a, "ctrl+c", :quit)
     bind!(a, "ctrl+q", :quit)
+    bind!(a, "tab", :focus_next)
+    bind!(a, "shift+tab", :focus_prev)
     walk(root) do w
         node(w).app = a
         nothing

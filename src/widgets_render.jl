@@ -1,5 +1,3 @@
-import ManyUI: render!
-
 # --- from widgets/label.jl ---
 function render!(w::Label, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
@@ -25,11 +23,29 @@ function render!(w::Button, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
-    w.pressed[] && (st = with(st, Attr.REVERSE, true))
+    is_disabled = w.disabled[]
+    is_disabled && (st = merge(st, ManyUI.Style(dim=true)))
+    w.pressed[] && !is_disabled && (st = with(st, Attr.REVERSE, true))
     caption = truncate_width(w.label[], width)
     x = 1 + (width - text_width(caption)) ÷ 2
     y = 1 + (height - 1) ÷ 2
     write_text!(buf, x, y, caption, st)
+    return nothing
+end
+
+# --- from widgets/progressbar.jl ---
+function render!(w::ProgressBar, buf::AbstractMatrix{Cell})::Nothing
+    width, height = size(buf)
+    (width <= 0 || height <= 0) && return nothing
+    st = computed_style(w)
+
+    val = w.progress[]
+    filled_len = round(Int, val * width)
+
+    bar = repeat("█", filled_len) * repeat("░", width - filled_len)
+
+    y = 1 + (height - 1) ÷ 2
+    write_text!(buf, 1, y, bar, st)
     return nothing
 end
 
@@ -68,8 +84,17 @@ function render!(w::TextInput, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
+    is_disabled = w.disabled[]
+    is_disabled && (st = merge(st, ManyUI.Style(dim=true)))
     s = w.text[]
+    if w.is_password
+        s = repeat("*", length(s)) # each character becomes a star
+    end
     lo, cw = ManyUI._ti_caret_cells(w)
+    if w.is_password
+        lo = w.cursor[] # Since it's all stars (1 cell each), lo is just the cursor index
+        cw = 1
+    end
     off = ManyUI._ti_window(w, width, lo, cw)
     if isempty(s)
         isempty(w.placeholder) ||
@@ -78,7 +103,7 @@ function render!(w::TextInput, buf::AbstractMatrix{Cell})::Nothing
     else
         write_text!(buf, 1 - off, 1, s, st)
     end
-    w.focused[] || return nothing
+    w.focused[] && !is_disabled || return nothing
     # `style_region!` clips, so a caret column outside the box is a
     # no-op rather than a throw, and it keeps the cell's content and
     # width -- reversing a head must not turn it into a fresh cell.
@@ -132,10 +157,13 @@ function render!(w::RadioGroup, buf::AbstractMatrix{Cell})::Nothing
     foc = w.focused[]
     cur = w.cursor[]
     sel = w.selected[]
+    disabled = w.disabled[]
     n = length(w.options)
     for row in 1:height
         row > n && break
-        rst = (foc && row == cur) ? merge(st, ManyUI.CB_FOCUS) : st
+        is_disabled = row in disabled
+        base_st = is_disabled ? merge(st, ManyUI.Style(dim=true)) : st
+        rst = (foc && row == cur && !is_disabled) ? merge(base_st, ManyUI.CB_FOCUS) : base_st
         write_text!(buf, 1, row, sel == row ? ManyUI.RB_ON : ManyUI.RB_OFF, rst)
         cap = w.options[row]
         isempty(cap) ||
