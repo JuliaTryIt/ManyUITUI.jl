@@ -251,8 +251,23 @@ function sgr!(io::IO, from::Style, to::Style,
             (add & UInt16(a)) == 0x0000 || write(io, seq)
         end
     end
-    t.fg === f.fg || Ansi.color_seq!(io, t.fg, depth, 30)
-    t.bg === f.bg || Ansi.color_seq!(io, t.bg, depth, 40)
+
+    if t.fg !== f.fg
+        if t.fg.kind === ColorKind.UNSET
+            write(io, "\e[39m")
+        else
+            Ansi.color_seq!(io, t.fg, depth, 30)
+        end
+    end
+    
+    if t.bg !== f.bg
+        if t.bg.kind === ColorKind.UNSET
+            write(io, "\e[49m")
+        else
+            Ansi.color_seq!(io, t.bg, depth, 40)
+        end
+    end
+    
     return nothing
 end
 
