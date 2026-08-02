@@ -240,6 +240,31 @@ end
     @test c[3, 1].style === STYLE_NONE
 end
 
+@testitem "buffer: transparent text preserves the painted background" begin
+    using ManyUI, ManyUITUI
+
+    blue = rgb(20, 40, 180)
+    red = rgb(180, 20, 40)
+    b = Buffer(4, 1)
+    fill_region!(b, buffer_region(b), Cell(" ", Style(bg = blue)))
+
+    # Text paints a foreground over the existing cell. An unspecified
+    # background is transparent and must not resolve to terminal black.
+    transparent = Style(fg = red, bold = true)
+    @test write_text!(b, 1, 1, "ab", transparent) == 2
+    @test b[1, 1].style.fg === red
+    @test b[1, 1].style.bg === blue
+    @test has(b[1, 1].style, Attr.BOLD)
+    @test b[2, 1].style.bg === blue
+
+    # Explicit backgrounds still replace the underlay, including the
+    # terminal-default colour requested with SGR 49.
+    set_cell!(b, 3, 1, "c", Style(bg = red))
+    @test b[3, 1].style.bg === red
+    set_cell!(b, 4, 1, "d", Style(bg = COLOR_DEFAULT))
+    @test b[4, 1].style.bg === COLOR_DEFAULT
+end
+
 @testitem "buffer: fill_region! clips and blanks split wide glyphs" begin
     using ManyUI, ManyUITUI
 

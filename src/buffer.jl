@@ -399,6 +399,22 @@ set_cell!(b::AbstractMatrix{Cell}, x::Int, y::Int,
     set_cell!(b, x, y, Cell(g, s))
 
 """
+Return `over` composited onto `under`.
+
+An unset background is transparent at paint time: it keeps the background
+already present in the destination cell. Foreground and text attributes come
+only from `over`; they follow the widget cascade and are not visual layers.
+Explicit RGB, palette, and terminal-default backgrounds replace the underlay.
+"""
+@inline function _composite_background(under::Cell, over::Cell)::Cell
+    is_set(over.style.bg) && return over
+    bg = under.style.bg
+    is_unset(bg) && return over
+    style = Style(over.style.fg, bg, over.style.attrs, over.style.mask)
+    return Cell(over.content, style, over.width)
+end
+
+"""
 S3. Write one prebuilt cell; returns the cells advanced (0, 1 or 2).
 Same continuation invariant and clipping as the grapheme form.
 
@@ -416,9 +432,10 @@ function set_cell!(b::AbstractMatrix{Cell}, x::Int, y::Int,
     wide = c.width == Int8(2)
     wide && x + 1 > w && return 0           # refused, not halved
     wide && !_pair_fits(b, x) && return 0   # refused at the CLIP edge
+    under = b[x, y]
     _break_wide!(b, x, y)
     wide && _break_wide!(b, x + 1, y)
-    b[x, y] = c
+    b[x, y] = _composite_background(under, c)
     wide && (b[x+1, y] = CELL_CONT)
     return Int(c.width)
 end
