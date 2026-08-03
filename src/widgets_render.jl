@@ -143,7 +143,9 @@ function render!(w::Checkbox, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
-    w.focused[] && (st = merge(st, ManyUI.CB_FOCUS))
+    is_disabled = w.disabled[]
+    is_disabled && (st = merge(st, ManyUI.Style(dim=true)))
+    w.focused[] && !is_disabled && (st = merge(st, ManyUI.CB_FOCUS))
     write_text!(buf, 1, 1, ManyUI._cb_glyph(w.state[]), st)
     lbl = w.label[]
     isempty(lbl) ||
@@ -177,7 +179,9 @@ function render!(w::TabStrip, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
-    w.focused[] && (st = merge(st, ManyUI.TABS_FOCUS))
+    is_disabled = w.disabled[]
+    is_disabled && (st = merge(st, ManyUI.Style(dim=true)))
+    w.focused[] && !is_disabled && (st = merge(st, ManyUI.TABS_FOCUS))
     sel = w.selected[]
     x = 1
     for (i, title) in enumerate(w.titles)
@@ -418,6 +422,39 @@ function render_min_size_overlay!(buf::Buffer, actual::Size,
 end
 
 render!(w::DataTable, buf::AbstractMatrix{Cell})::Nothing = _tc_render_table!(w, buf)
+
+# --- from widgets/spinner.jl ---
+function render!(w::Spinner, buf::AbstractMatrix{Cell})::Nothing
+    width, height = size(buf)
+    (width <= 0 || height <= 0) && return nothing
+    st = computed_style(w)
+    write_text!(buf, 1, 1, w.frames[w.tick[]], st)
+    return nothing
+end
+
+# --- from widgets/slider.jl ---
+function render!(w::Slider, buf::AbstractMatrix{Cell})::Nothing
+    width, height = size(buf)
+    (width <= 0 || height <= 0) && return nothing
+    st = computed_style(w)
+    is_disabled = w.disabled[]
+    is_disabled && (st = merge(st, ManyUI.Style(dim=true)))
+    
+    val = w.value[]
+    range = w.max - w.min
+    pct = range > 0 ? (val - w.min) / range : 0.0
+    
+    # 1 cell for thumb, rest for track
+    track_width = max(1, width)
+    thumb_pos = clamp(round(Int, 1 + (track_width - 1) * pct), 1, track_width)
+    
+    # Draw track
+    _tc_slice!(buf, 1, 1, width, "━"^track_width, st)
+    # Draw thumb
+    thumb_st = w.focused[] && !is_disabled ? merge(st, ManyUI.CB_FOCUS) : st
+    write_text!(buf, thumb_pos, 1, "●", thumb_st)
+    return nothing
+end
 
 """
 Write one cell of the bar, in the bar's own long-axis coordinate.
