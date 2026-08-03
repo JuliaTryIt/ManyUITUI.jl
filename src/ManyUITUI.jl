@@ -43,5 +43,6 @@ export call_later!, set_interval!, invalidate!, pause!, resume!
 export handle!, frame!, refresh!
 export focused, focus!, focus_next!, focus_prev!, bind!, on_action, popup_of, open_popup!, close_popup!
 export Backend, TerminalBackend, HeadlessBackend, make_driver, launch
+export backend_available, backend_kind, backend_capabilities
 
 end

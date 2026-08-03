@@ -1,4 +1,6 @@
 # backend.jl -- one verb for "run this app", whatever the target.
+
+import ManyUI: backend_available, backend_kind, backend_capabilities
 #
 # The Driver seam already makes targets swappable; what it does not do is
 # make them swappable WITHOUT EDITING THE CALL. Compare what a user wrote
@@ -45,6 +47,10 @@ does -- instead defines its own [`launch`](@ref) method and never uses
 """
 abstract type Backend end
 
+backend_available(::Backend) = true
+backend_kind(b::Backend) = Symbol(nameof(typeof(b)))
+backend_capabilities(::Backend) = ManyUI.DEFAULT_BACKEND_CAPABILITIES
+
 """
 $(SIGNATURES)
 
@@ -78,6 +84,12 @@ struct TerminalBackend <: Backend
     "Seconds between size polls."
     resize_poll::Float64
 end
+
+backend_kind(::TerminalBackend) = :tui
+backend_capabilities(::TerminalBackend) = merge(
+    ManyUI.DEFAULT_BACKEND_CAPABILITIES,
+    (transparency = false, native_window = false, gpu = false,
+     multi_session = false))
 
 """
 $(SIGNATURES)
@@ -116,6 +128,12 @@ struct HeadlessBackend <: Backend
     "Event channel depth."
     buffer::Int
 end
+
+backend_kind(::HeadlessBackend) = :headless
+backend_capabilities(::HeadlessBackend) = merge(
+    ManyUI.DEFAULT_BACKEND_CAPABILITIES,
+    (mouse = false, focus = false, native_window = false, gpu = false,
+     multi_session = false))
 
 """
 $(SIGNATURES)
