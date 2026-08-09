@@ -81,6 +81,31 @@ function render!(w::Sparkline, buf::AbstractMatrix{Cell})::Nothing
     return nothing
 end
 
+# --- from widgets/progresslist.jl ---
+function render!(w::ProgressList, buf::AbstractMatrix{Cell})::Nothing
+    width, height = size(buf)
+    (width <= 0 || height <= 0) && return nothing
+    st = computed_style(w)
+    off = scroll_of(w)
+    n = length(w.items)
+    lw = ManyUI.pl_label_width(w)
+    bar_x = lw + ManyUI.PL_GAP + 1
+    bar_w = width - bar_x + 1
+    for row in 1:height
+        i = off.y + row
+        # `1 <= i` and not just `i <= n`: an over-scroll is blank rows,
+        # never a BoundsError. List.render!'s guard, verbatim.
+        (1 <= i <= n) || break
+        it = w.items[i]
+        lw > 0 && _tc_slice!(buf, 1, row, min(width, lw), it.label, st)
+        bar_w >= ManyUI.PL_MIN_BAR || continue
+        filled = clamp(round(Int, it.progress * bar_w), 0, bar_w)
+        write_text!(buf, bar_x, row,
+                    repeat("█", filled) * repeat("░", bar_w - filled), st)
+    end
+    return nothing
+end
+
 # --- from widgets/statusbar.jl ---
 function render!(w::StatusBar, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)

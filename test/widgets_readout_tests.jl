@@ -196,3 +196,134 @@ end
         @test 0 <= progress_cells(bare, w) <= w
     end
 end
+
+@testitem "progresslist: a row is data, not a widget" begin
+    using ManyUI, ManyUITUI
+
+    pl = ProgressList([ProgressItem("build", 0.5),
+                       ProgressItem("test", 1.0)])
+    @test n_items(pl) == 2
+    @test isempty(children(pl))          # two rows, ONE node
+    @test content_extent(pl).height == 2
+
+    clean!(pl)
+    @test set_progress!(pl, 1, 0.75)
+    @test pl.items[1].progress == 0.75
+    @test is_dirty(pl, Dirty.PAINT)
+    # Out of range is clamped at the door, so render! never sees one.
+    @test set_progress!(pl, 2, 5.0) == false      # already 1.0
+    set_progress!(pl, 1, -3)
+    @test pl.items[1].progress == 0.0
+    @test !set_progress!(pl, 99, 0.5)             # no such row
+end
+
+@testitem "progresslist: the label column does not move as it scrolls" begin
+    using ManyUI, ManyUITUI
+
+    pl = ProgressList([ProgressItem("a", 0.1),
+                       ProgressItem("longest", 0.2),
+                       ProgressItem("bb", 0.3)])
+    # AUTO measures EVERY caption, not a sample: a column that changed
+    # width mid-scroll would make every bar jump sideways.
+    @test pl_label_width(pl) == 7
+
+    fixed = ProgressList([ProgressItem("longest", 0.1)];
+                         label_width = cells(3))
+    @test pl_label_width(fixed) == 3
+end
+
+@testitem "progresslist: rows paint a caption then a bar" begin
+    using ManyUI, ManyUITUI
+
+    pl = ProgressList([ProgressItem("ab", 0.5), ProgressItem("cd", 0.0)])
+    apply_stylesheet!(STYLESHEET_EMPTY, pl)
+    buf = Buffer(11, 2)
+    render!(pl, buf)
+
+    rows = [join(String(buf[x, y].content) for x = 1:11) for y = 1:2]
+    # 2 label + 1 gap leaves 8 for the bar; half of 8 is 4.
+    @test rows[1] == "ab ████░░░░"
+    @test rows[2] == "cd ░░░░░░░░"
+
+    # Too narrow for a bar: the row is all caption rather than a
+    # misleading two-cell bar.
+    narrow = Buffer(5, 1)
+    render!(pl, narrow)
+    @test startswith(join(String(narrow[x, 1].content) for x = 1:5), "ab")
+end
+
+@testitem "dialog: it is a Container, not a new widget type" begin
+    using ManyUI, ManyUITUI
+
+    hit = Ref(0)
+    d = Dialog("Discard changes?";
+               title = "Confirm",
+               buttons = ["OK" => (_ -> hit[] += 1),
+                          "Cancel" => (_ -> nothing)])
+
+    # A dialog is an ARRANGEMENT of things that already exist, so it
+    # composes, restyles and is queried like anything else.
+    @test d isa Container
+    @test plain(border_title(d)) == "Confirm"
+    @test border_title_align(d) === Align.CENTER
+    @test length(children(d)) == 2                 # message, button row
+
+    btns = children(children(d)[2])
+    @test length(btns) == 2
+    @test all(b -> b isa Button, btns)
+    btns[1].on_click(btns[1])
+    @test hit[] == 1
+
+    # The buttons are the tab stops; the message is not.
+    @test length(focusable_widgets(d)) == 2
+end
+
+@testitem "dialog: dialog_size wraps the message it will show" begin
+    using ManyUI, ManyUITUI
+
+    small = dialog_size("hi")
+    @test small.width >= ManyUI.DIALOG_MIN_WIDTH
+    @test small.height >= 3
+
+    long = "a b c d e f g h i j k l m n o p q r s t u v w x y z " ^ 3
+    big = dialog_size(long; max = Size(30, 20))
+    # Bounded by `max`, and TALL because the message wrapped -- the
+    # layer takes a declared size, so guessing one line here would show
+    # as a clipped question.
+    @test big.width <= 30
+    @test big.height > small.height
+    @test big.height <= 20
+
+    # Buttons add their row.
+    @test dialog_size("hi"; buttons = ["OK" => identity]).height >
+          dialog_size("hi").height
+end
+
+@testitem "dialog: it opens modal and centred" begin
+    using ManyUI, ManyUITUI
+
+    owner = Button("open", identity)
+    root = Container(owner)
+    app = App(root, HeadlessDriver(Size(50, 16)))
+    apply_stylesheet!(STYLESHEET_EMPTY, root)
+    layout!(root, Region(1, 1, 50, 16))
+
+    msg = "Discard changes?"
+    d = Dialog(msg; title = "Confirm",
+               buttons = ["OK" => (_ -> close_popup!(app, owner))])
+    open_popup!(app, Popup(d, owner, dialog_size(msg; title = "Confirm",
+                                                 buttons = ["OK" => identity]);
+                           placement = PopupPlacement.CENTER, modal = true))
+
+    @test popup_of(app) !== nothing
+    @test focus_root(app) === d              # trapped
+    # An outside press does not answer the question.
+    handle!(app, MouseEvent(MouseAction.PRESS, MouseButton.LEFT, 1, 1,
+                            MOD_NONE))
+    @test popup_of(app) !== nothing
+
+    # Its own button does.
+    btn = children(children(d)[2])[1]
+    btn.on_click(btn)
+    @test popup_of(app) === nothing
+end
