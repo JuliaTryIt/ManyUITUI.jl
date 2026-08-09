@@ -81,6 +81,25 @@ function render!(w::Sparkline, buf::AbstractMatrix{Cell})::Nothing
     return nothing
 end
 
+# --- from widgets/markdownpane.jl ---
+function render!(w::MarkdownPane, buf::AbstractMatrix{Cell})::Nothing
+    width, height = size(buf)
+    (width <= 0 || height <= 0) && return nothing
+    st = computed_style(w)
+    off = scroll_of(w)
+    # Rendering to lines happens HERE, at the width layout actually
+    # granted, and is cached against it -- a document reflows when the
+    # box changes and not once a frame.
+    lines = ManyUI.md_lines(w, width)
+    n = length(lines)
+    for row in 1:height
+        i = off.y + row
+        (1 <= i <= n) || break
+        _tc_paint_slice!(buf, row, width, off.x, lines[i], st)
+    end
+    return nothing
+end
+
 # --- from widgets/progresslist.jl ---
 function render!(w::ProgressList, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
