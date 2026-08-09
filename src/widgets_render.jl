@@ -38,14 +38,57 @@ function render!(w::ProgressBar, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
     st = computed_style(w)
-
-    val = w.progress[]
-    filled_len = round(Int, val * width)
-
-    bar = repeat("█", filled_len) * repeat("░", width - filled_len)
-
+    filled = ManyUI.progress_cells(w, width)
     y = 1 + (height - 1) ÷ 2
-    write_text!(buf, 1, y, bar, st)
+    lbl = w.label[]
+
+    if isempty(lbl)
+        bar = repeat("█", filled) * repeat("░", width - filled)
+        write_text!(buf, 1, y, bar, st)
+        return nothing
+    end
+
+    # A LABELLED bar cannot use the block glyphs: text written over "█"
+    # is unreadable. So the fill becomes a REVERSED span of blanks, the
+    # caption is written across the whole width, and the same span is
+    # reversed afterwards -- which reverses the caption's cells too and
+    # is exactly what makes the boundary legible THROUGH the text.
+    write_text!(buf, 1, y, " "^width, st)
+    _tc_slice!(buf, 1 + (width - text_width(lbl)) ÷ 2, y, width, lbl, st)
+    filled > 0 && style_region!(buf, Region(1, y, filled, 1),
+                                ManyUI.PROGRESS_FILL)
+    return nothing
+end
+
+# --- from widgets/sparkline.jl ---
+function render!(w::Sparkline, buf::AbstractMatrix{Cell})::Nothing
+    width, height = size(buf)
+    (width <= 0 || height <= 0) && return nothing
+    st = computed_style(w)
+    n = length(w.values)
+    n == 0 && return nothing
+    # The LAST `width` samples: new data arrives on the right and the
+    # oldest scrolls off the left, which is what a live series wants.
+    first_i = max(1, n - width + 1)
+    (lo, hi) = ManyUI.spark_bounds(w)
+    x = 1
+    for i in first_i:n
+        g = hi <= lo ? ManyUI.SPARK_FLAT :
+            ManyUI.SPARK_GLYPHS[ManyUI.spark_level(w.values[i], lo, hi)]
+        write_text!(buf, x, 1, g, st)
+        x += 1
+    end
+    return nothing
+end
+
+# --- from widgets/statusbar.jl ---
+function render!(w::StatusBar, buf::AbstractMatrix{Cell})::Nothing
+    width, height = size(buf)
+    (width <= 0 || height <= 0) && return nothing
+    st = computed_style(w)
+    for (x, seg) in ManyUI.status_layout(w, width)
+        _tc_slice!(buf, x, 1, width, seg, st)
+    end
     return nothing
 end
 
