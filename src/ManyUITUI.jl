@@ -3,6 +3,7 @@ module ManyUITUI
 using ManyUI
 import ManyUI: Event, Widget, post!, focus!, popup_of, open_popup!, close_popup!, on_popup_close!
 using InlineStrings
+using Preferences
 using DocStringExtensions, REPL, Unicode
 import Base: resize!
 
@@ -17,6 +18,7 @@ include("headless.jl")
 include("terminal.jl")
 include("app.jl")
 include("popup_ops.jl")
+include("prefs.jl")
 include("backend.jl")
 
 include("widgets_render.jl")
@@ -42,6 +44,10 @@ export AppConfig, App, run!, quit!, exit!, post!
 export call_later!, set_interval!, invalidate!, pause!, resume!
 export handle!, frame!, refresh!
 export focused, focus!, focus_next!, focus_prev!, bind!, on_action, popup_of, open_popup!, close_popup!, focus_root
+export PREF_THEME, PREF_SPLITS, is_persistable_id
+export save_theme_pref!, theme_pref, restore_theme!
+export save_splits!, restore_splits!
+export save_ui_prefs!, restore_ui_prefs!
 export Backend, TerminalBackend, HeadlessBackend, make_driver, launch
 export backend_available, backend_kind, backend_capabilities
 
