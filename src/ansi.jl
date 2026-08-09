@@ -11,7 +11,7 @@ Raw escape-sequence vocabulary. Constants and pure builders only.
 module Ansi
 
 using DocStringExtensions
-using ..ManyUI: Color, ColorKind, ColorDepth, degrade
+using ..ManyUI: Color, ColorKind, ColorDepth, degrade, resolve_token
 
 @template (FUNCTIONS, METHODS) = """
     $(TYPEDSIGNATURES)
@@ -94,7 +94,11 @@ it means "inherit", which on the wire is silence. Internal.
 """
 function color_seq!(io::IO, c::Color, depth::ColorDepth.T,
                     base::Int)::Nothing
-    d = degrade(c, depth)
+    # A theme token becomes a colour HERE and nowhere earlier. This is
+    # the one place an authorial-intent colour meets a device, so it is
+    # the one place that has to know what `warning` means today -- which
+    # is why swapping a theme needs no re-cascade and no re-parse.
+    d = degrade(resolve_token(c), depth)
     k = d.kind
     if k === ColorKind.UNSET
         return nothing
@@ -235,8 +239,11 @@ which is what makes the encoder minimal on a 16-color target.
 function sgr!(io::IO, from::Style, to::Style,
               depth::ColorDepth.T)::Nothing
     from === to && return nothing
-    f = degrade(from, depth)
-    t = degrade(to, depth)
+    # Resolve BEFORE degrading, or the law above breaks: two styles
+    # naming different tokens that mean the same colour today would
+    # compare unequal and emit bytes that change nothing.
+    f = degrade(resolve_token(from), depth)
+    t = degrade(resolve_token(to), depth)
     f === t && return nothing
 
     on_t = attrs_on(t)

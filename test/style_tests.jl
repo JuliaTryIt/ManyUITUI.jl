@@ -399,3 +399,52 @@ end
     # Return type is exactly the contract's.
     @test parse_attrs("bold") isa Tuple{AttrMask,AttrMask}
 end
+
+@testitem "ansi: a theme token becomes a colour at emission" begin
+    using ManyUI, ManyUITUI
+
+    before = theme()
+    try
+        set_theme!(:dark)
+        want = theme_color(theme(:dark), :accent)
+
+        io = IOBuffer()
+        ManyUITUI.Ansi.color_seq!(io, token(:accent), ColorDepth.TRUECOLOR, 30)
+        got = String(take!(io))
+
+        io2 = IOBuffer()
+        ManyUITUI.Ansi.color_seq!(io2, want, ColorDepth.TRUECOLOR, 30)
+        @test got == String(take!(io2))
+        @test !isempty(got)
+
+        # The SAME token emits different bytes under a different theme,
+        # with nothing rebuilt in between: that is the swap.
+        set_theme!(:light)
+        io3 = IOBuffer()
+        ManyUITUI.Ansi.color_seq!(io3, token(:accent), ColorDepth.TRUECOLOR, 30)
+        @test String(take!(io3)) != got
+    finally
+        set_theme!(before)
+    end
+end
+
+@testitem "ansi: sgr! resolves before it compares" begin
+    using ManyUI, ManyUITUI
+
+    before = theme()
+    try
+        set_theme!(:dark)
+        # Two spellings of the same colour today: one named, one literal.
+        a = Style(fg = token(:accent))
+        b = Style(fg = theme_color(theme(:dark), :accent))
+        @test a !== b
+
+        io = IOBuffer()
+        sgr!(io, a, b, ColorDepth.TRUECOLOR)
+        # Nothing to say: they degrade alike once resolved. Comparing
+        # before resolving would emit a redundant sequence here.
+        @test isempty(take!(io))
+    finally
+        set_theme!(before)
+    end
+end
