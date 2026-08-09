@@ -195,6 +195,27 @@ function render!(w::TabStrip, buf::AbstractMatrix{Cell})::Nothing
     return nothing
 end
 
+# --- from widgets/splitter.jl ---
+function render!(w::SplitHandle, buf::AbstractMatrix{Cell})::Nothing
+    width, height = size(buf)
+    (width <= 0 || height <= 0) && return nothing
+    st = computed_style(w)
+    w.active[] && (st = merge(st, ManyUI.SPLIT_ACTIVE))
+    # One cell thick on the main axis, stretched on the cross one, so
+    # which way it runs is read off the box rather than off the parent:
+    # a handle painted the wrong way round is a handle nobody can see.
+    if width <= height
+        for y in 1:height
+            write_text!(buf, 1, y, ManyUI.SPLIT_GLYPH_V, st)
+        end
+    else
+        for x in 1:width
+            write_text!(buf, x, 1, ManyUI.SPLIT_GLYPH_H, st)
+        end
+    end
+    return nothing
+end
+
 # --- from widgets/tree.jl ---
 function render!(w::TreeView, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
