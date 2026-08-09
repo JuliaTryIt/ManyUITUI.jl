@@ -647,8 +647,37 @@ function focus!(app::App, w::Widget)::Nothing
     old = app.focus
     old === w && return nothing
     old === nothing || on_blur!(old)
+    _focus_chain!(old, false)
     app.focus = w
+    _focus_chain!(w, true)
     on_focus!(w)
+    return nothing
+end
+
+"""
+Set or clear `focused` on `w` and `focus_within` on every ancestor,
+marking each `Dirty.STYLE` so the next `recascade!` re-runs the rules
+that read them.
+
+ONE CHAIN, root-ward, and that is the whole reason `:focus-within` is a
+stored flag rather than a walk of the subtree: a focus change costs the
+DEPTH of the tree here, where answering the question by descending
+would cost its size, once per node, per rule.
+
+Marking `Dirty.STYLE` is what makes a focus ring a stylesheet rule
+instead of a branch in every widget's `render!`.
+"""
+function _focus_chain!(w::Union{Nothing,Widget}, on::Bool)::Nothing
+    w === nothing && return nothing
+    n = node(w)
+    n.focused === on || (n.focused = on; mark!(w, Dirty.STYLE))
+    p = n.parent
+    while p !== nothing
+        pn = node(p)
+        pn.focus_within === on || (pn.focus_within = on;
+                                   mark!(p, Dirty.STYLE))
+        p = pn.parent
+    end
     return nothing
 end
 
