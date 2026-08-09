@@ -41,7 +41,7 @@ export TerminalDriver, detect_caps, set_raw!
 export AppConfig, App, run!, quit!, exit!, post!
 export call_later!, set_interval!, invalidate!, pause!, resume!
 export handle!, frame!, refresh!
-export focused, focus!, focus_next!, focus_prev!, bind!, on_action, popup_of, open_popup!, close_popup!
+export focused, focus!, focus_next!, focus_prev!, bind!, on_action, popup_of, open_popup!, close_popup!, focus_root
 export Backend, TerminalBackend, HeadlessBackend, make_driver, launch
 export backend_available, backend_kind, backend_capabilities
 

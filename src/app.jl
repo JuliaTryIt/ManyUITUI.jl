@@ -58,6 +58,16 @@ mutable struct App{D<:Driver} <: AbstractApp
     focus::Union{Nothing,Widget}
     "The open popup painted over the tree, or `nothing`."
     popup::Union{Nothing,Popup}
+    """
+    Where focus was before a MODAL took it, restored when the modal
+    closes.
+
+    A field rather than a guess: without it, closing a dialog can only
+    put focus back at the top of the tree, and a user who opened it
+    from the eighth field of a form lands on the first. Only a modal
+    writes it -- an ordinary popup never takes focus in the first place.
+    """
+    focus_before_modal::Union{Nothing,Widget}
     "Key to action name."
     const bindings::Dict{KeyEvent,Symbol}
     "The current renderable area."
@@ -115,7 +125,7 @@ function App(root::Widget, driver::D;
                       sync_frames = config.sync_frames &&
                                     caps.sync_output)
     a = App{D}(driver, root, overlay, config, enc, stylesheet,
-               Buffer(vp), Buffer(vp), nothing, nothing,
+               Buffer(vp), Buffer(vp), nothing, nothing, nothing,
                Dict{KeyEvent,Symbol}(), vp, false, false,
                should_suspend(vp, config.min_size), true, 0, nothing,
                Timer[])
@@ -424,7 +434,11 @@ E3. Propagate, then -- if unconsumed -- look up `app.bindings`, then
 `on_action` up the focus chain, then the app defaults.
 """
 function handle!(app::App, e::KeyEvent)::Nothing
-    dispatch_event!(app.root, e, app.focus) && return nothing
+    # `focus_root`, not `app.root`: an open MODAL owns the keyboard, so
+    # a key never reaches the tree behind it. It stays `app.root` for
+    # everything else, including a DropDown's popup -- that one keeps
+    # focus on the DropDown itself and forwards.
+    dispatch_event!(focus_root(app), e, app.focus) && return nothing
     action = get(app.bindings, e, nothing)
     action === nothing && return nothing
     _run_action!(app, action)
@@ -642,7 +656,7 @@ end
 Focus the next widget in tab order -- the pre-order walk.
 """
 function focus_next!(app::App)::Nothing
-    ws = focusable_widgets(app.root)
+    ws = focusable_widgets(focus_root(app))
     isempty(ws) && return nothing
     cur = app.focus
     i = cur === nothing ? 0 :
@@ -655,7 +669,7 @@ end
 Focus the previous widget in tab order.
 """
 function focus_prev!(app::App)::Nothing
-    ws = focusable_widgets(app.root)
+    ws = focusable_widgets(focus_root(app))
     isempty(ws) && return nothing
     cur = app.focus
     i = cur === nothing ? 1 :

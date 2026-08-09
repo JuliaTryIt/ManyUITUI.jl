@@ -66,6 +66,16 @@ function open_popup!(app::App, p::Popup)::Nothing
     app.popup = p
     _bind_popup_app!(p.content, app)
     _place_popup!(app, p)
+    # A modal takes the keyboard, so it must also take a CARET: focus
+    # left on the tree behind would type into a widget the user cannot
+    # see the cursor in. Remember where it was, because putting it back
+    # at the top of the tree on close is exactly the annoyance a form
+    # with eight fields makes obvious.
+    if p.modal
+        app.focus_before_modal = app.focus
+        ws = focusable_widgets(p.content)
+        isempty(ws) || focus!(app, first(ws))
+    end
     return nothing
 end
 
@@ -83,8 +93,36 @@ function close_popup!(app::App, owner::Widget)::Bool
     (p !== nothing && p.owner === owner) || return false
     app.popup = nothing
     _bind_popup_app!(p.content, nothing)
+    if p.modal
+        back = app.focus_before_modal
+        app.focus_before_modal = nothing
+        # Only if it is still in the tree: a modal whose owner rebuilt
+        # the page beneath it must not restore focus to a dead widget.
+        if back !== nothing && root_of(back) === app.root
+            focus!(app, back)
+        else
+            app.focus = nothing
+        end
+    end
     on_popup_close!(owner)
     return true
+end
+
+"""
+$(SIGNATURES)
+
+The root a keystroke and the tab order belong to: the content of an open
+MODAL popup, otherwise the tree.
+
+THE focus trap, and it is one function rather than a flag threaded
+through the dispatch: a modal that could be tabbed out of is a dialog
+the user answers by ignoring it. A non-modal popup does NOT take the
+keyboard -- a `DropDown` keeps focus itself and forwards, which is why
+this asks about `modal` and not merely about `popup`.
+"""
+function focus_root(app::App)::Widget
+    p = app.popup
+    return (p !== nothing && p.modal) ? p.content : app.root
 end
 
 """
@@ -98,6 +136,11 @@ function _paint_popup!(app::App)::Nothing
     p = app.popup
     p === nothing && return nothing
     _place_popup!(app, p)
+    # A modal dims what it covers BEFORE painting itself, so the dialog
+    # is the only thing at full strength. `style_region!` MERGES, so
+    # this dims whatever was already painted rather than repainting it,
+    # and it costs one pass over the viewport only while a modal is up.
+    p.modal && style_region!(app.back, buffer_region(app.back), MODAL_DIM)
     paint!(app.back, p.content)
     return nothing
 end
@@ -126,6 +169,11 @@ function _popup_dismiss!(app::App, e::MouseEvent)::Bool
         propagate!(p.content, target, e)
         return true
     end
+    # A MODAL swallows everything outside it and closes for none of it.
+    # That is the whole difference between modal and merely large: a
+    # dialog the application cannot proceed without must not be
+    # answerable by clicking next to it.
+    p.modal && return true
     is_scroll(e) && return false
     if e.action === MouseAction.PRESS
         close_popup!(app, p.owner)
