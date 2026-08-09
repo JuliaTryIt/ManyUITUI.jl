@@ -476,6 +476,10 @@ function render!(w::TextArea, buf::AbstractMatrix{Cell})::Nothing
     st = computed_style(w)
     off = scroll_of(w)
     n = length(w.lines)
+    # A highlighted TextArea IS a CodeEditor -- one field, not a second
+    # widget. The lines are cached against `version`, so this costs a
+    # lookup per frame and a relex per EDIT.
+    hl = ManyUI.code_lines(w)
     for row in 1:height
         li = off.y + row
         # `1 <= li` and not just `li <= n`: `set_scroll!` clamps at zero
@@ -483,6 +487,10 @@ function render!(w::TextArea, buf::AbstractMatrix{Cell})::Nothing
         # over-scroll far enough to wrap `li` negative. An over-scroll
         # is blank cells, never a BoundsError.
         (1 <= li <= n) || break
+        if li <= length(hl)
+            _tc_paint_slice!(buf, row, width, off.x, hl[li], st)
+            continue
+        end
         cx = 1 - off.x
         for g in graphemes(w.lines[li])
             cx > width && break
