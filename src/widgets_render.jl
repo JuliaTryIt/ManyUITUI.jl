@@ -185,7 +185,8 @@ function render!(w::TabStrip, buf::AbstractMatrix{Cell})::Nothing
     sel = w.selected[]
     x = 1
     for (i, title) in enumerate(w.titles)
-        cap = " "^ManyUI.TABS_PAD * title * " "^ManyUI.TABS_PAD
+        pad = " "^ManyUI.TABS_PAD
+        cap = pad * title * pad
         cst = i == sel ? merge(st, ManyUI.TABS_ACTIVE) : st
         _tc_slice!(buf, x, 1, width, cap, cst)
         x += text_width(title) + 2 * ManyUI.TABS_PAD
@@ -253,8 +254,24 @@ function _tc_slice!(buf::AbstractMatrix{Cell}, x::Int, y::Int,
     end
     return cx
 end
+# The RichText reading of the loop above, and the ONE place the row
+# widgets gain styled text: every one of them paints through
+# `_tc_slice!`, so List, Table, DataTable, TreeView, Tabs and Checkbox
+# all get it from this method rather than from six edits. Each run is
+# folded over the row's style with `merge`, threading `cx` so the runs
+# abut, and the clip test at the top of the loop is what stops a run
+# starting past the right edge.
+function _tc_slice!(buf::AbstractMatrix{Cell}, x::Int, y::Int,
+                    width::Int, rt::ManyUI.RichText, st::Style)::Int
+    cx = x
+    for r in rt.runs
+        cx > width && break
+        cx = _tc_slice!(buf, cx, y, width, r.text, merge(st, r.style))
+    end
+    return cx
+end
 function _tc_paint_slice!(buf::AbstractMatrix{Cell}, y::Int, width::Int,
-                          skip::Int, s::AbstractString, st::Style)::Int
+                          skip::Int, s::ManyUI.TextLike, st::Style)::Int
     cx = _tc_slice!(buf, 1 - skip, y, width, s, st)
     # `cx > width` means the loop broke early and the row was CUT: it
     # reached at least the right edge of the window. Understating a cut
@@ -263,7 +280,7 @@ function _tc_paint_slice!(buf::AbstractMatrix{Cell}, y::Int, width::Int,
     return cx - 1 + skip
 end
 function _tc_put!(buf::AbstractMatrix{Cell}, x0::Int, y::Int, cw::Int,
-                  text::AbstractString, align::Align.T,
+                  text::ManyUI.TextLike, align::Align.T,
                   st::Style)::Nothing
     cw <= 0 && return nothing
     width = size(buf, 1)

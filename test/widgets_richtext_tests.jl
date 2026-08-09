@@ -126,3 +126,108 @@ end
     @test buf[1, 1].content == "x"
     @test buf[2, 1] == CELL_BLANK
 end
+
+@testitem "richtext widgets: a tab caption may be styled mid-word" begin
+    using ManyUI, ManyUITUI
+
+    # The Kaimon idiom: the shortcut key in a warning colour, the
+    # caption in the inherited one. This is the case that motivated the
+    # whole primitive -- three nodes per tab was the alternative.
+    warn = Style(fg = rgb(255, 200, 0), bold = true)
+    cap = RichText(TextRun("1", warn), TextRun(" Server"))
+
+    t = Tabs(cap => Container(), "2 Sessions" => Container())
+    @test n_tabs(t) == 2
+    @test tab_title(t, 1) == cap
+    @test tab_title(t, 2) == RichText("2 Sessions")
+
+    strip = t.strip
+    apply_stylesheet!(STYLESHEET_EMPTY, t)
+    # " 1 Server " is 10 cells, " 2 Sessions " is 12.
+    @test measure(strip, Size(80, 1)) == Size(22, 1)
+
+    buf = Buffer(22, 1)
+    render!(strip, buf)
+    @test string(buf) == " 1 Server  2 Sessions "
+
+    # Column 2 is the styled digit; column 4 is inside " Server".
+    @test buf[2, 1].content == "1"
+    @test buf[2, 1].style.fg == rgb(255, 200, 0)
+    @test has(buf[2, 1].style, Attr.BOLD)
+    @test !has(buf[4, 1].style, Attr.BOLD)
+end
+
+@testitem "richtext widgets: a rich caption still hit-tests by width" begin
+    using ManyUI, ManyUITUI
+
+    bold = Style(bold = true)
+    t = Tabs(RichText("ab", bold) => Container(), "cdef" => Container())
+    strip = t.strip
+
+    # Styling must not shift the clickable regions: " ab " is columns
+    # 1-4, " cdef " is 5-10.
+    @test ManyUI.tab_at(strip.titles, 1) == 1
+    @test ManyUI.tab_at(strip.titles, 4) == 1
+    @test ManyUI.tab_at(strip.titles, 5) == 2
+    @test ManyUI.tab_at(strip.titles, 10) == 2
+    @test ManyUI.tab_at(strip.titles, 11) == 0
+end
+
+@testitem "richtext widgets: a List format may return a RichText" begin
+    using ManyUI, ManyUITUI
+
+    warn = Style(fg = rgb(255, 0, 0))
+    # A log list: the level coloured, the message not.
+    rows = [(:error, "disk full"), (:info, "ok")]
+    fmt = r -> RichText(TextRun(String(r[1]), r[1] === :error ? warn : STYLE_NONE),
+                        TextRun(" " * r[2]))
+    l = List(rows; format = fmt)
+
+    apply_stylesheet!(STYLESHEET_EMPTY, l)
+    buf = Buffer(16, 2)
+    render!(l, buf)
+
+    row1 = join(String(buf[x, 1].content) for x = 1:16)
+    @test rstrip(row1) == "error disk full"
+    @test buf[1, 1].style.fg == rgb(255, 0, 0)     # the level
+    @test buf[7, 1].style.fg != rgb(255, 0, 0)     # the message
+    @test buf[1, 2].style.fg != rgb(255, 0, 0)     # :info is unstyled
+end
+
+@testitem "richtext widgets: a Table cell may return a RichText" begin
+    using ManyUI, ManyUITUI
+
+    bold = Style(bold = true)
+    t = Table([1, 2], [Column("N"; width = cells(6))];
+              cell = (r, j) -> RichText(TextRun("a", bold), TextRun("b")))
+
+    apply_stylesheet!(STYLESHEET_EMPTY, t)
+    buf = Buffer(6, 3)
+    render!(t, buf)
+
+    # Row 1 sits under the header.
+    @test buf[1, 2].content == "a"
+    @test has(buf[1, 2].style, Attr.BOLD)
+    @test buf[2, 2].content == "b"
+    @test !has(buf[2, 2].style, Attr.BOLD)
+end
+
+@testitem "richtext widgets: a rich cell too wide is cut and marked" begin
+    using ManyUI, ManyUITUI
+
+    bold = Style(bold = true)
+    # Four cells for six characters: the column must cut and mark the
+    # cut exactly as it does for a plain string.
+    t = Table([1], [Column("N"; width = cells(4))];
+              cell = (r, j) -> RichText(TextRun("abc", bold), TextRun("def")))
+
+    apply_stylesheet!(STYLESHEET_EMPTY, t)
+    buf = Buffer(4, 2)
+    render!(t, buf)
+
+    @test buf[1, 2].content == "a"
+    @test buf[2, 2].content == "b"
+    @test buf[3, 2].content == "c"
+    @test String(buf[4, 2].content) == ManyUI.TC_ELLIPSIS
+    @test has(buf[1, 2].style, Attr.BOLD)
+end

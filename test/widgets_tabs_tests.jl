@@ -22,10 +22,10 @@
     @test is_focusable(t.strip)
     @test type_name(t.strip) === :TabStrip
     # The strip's titles are the source of truth and are ALIASED.
-    @test t.strip.titles == ["One", "Two"]
+    @test t.strip.titles == [RichText("One"), RichText("Two")]
     @test n_tabs(t) == 2
-    @test tab_title(t, 1) == "One"
-    @test tab_title(t, 2) == "Two"
+    @test plain(tab_title(t, 1)) == "One"
+    @test plain(tab_title(t, 2)) == "Two"
     # The strip is child 1; panels follow.
     @test children(t)[1] === t.strip
     @test tab_panel(t, 1) === children(t)[2]
@@ -86,9 +86,12 @@ end
 
 @testitem "tabs: tab_at is pure over titles" begin
     using ManyUI, ManyUITUI
-    # A table test: a `Vector{String}` and an `Int`, no widget, no
-    # layout, no buffer. Captions abut with no separator; " One " is
-    # columns 1-5, " Two " is 6-10.
+    # A table test: a vector of captions and an `Int`, no widget, no
+    # layout, no buffer. Plain strings on purpose -- `tab_at` needs
+    # nothing but `text_width`, so it stayed generic over TextLike and
+    # a caller holding strings does not have to convert to ask.
+    # Captions abut with no separator; " One " is columns 1-5, " Two "
+    # is 6-10.
     titles = ["One", "Two"]
     @test tab_at(titles, 0) == 0
     @test tab_at(titles, 1) == 1
