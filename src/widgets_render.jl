@@ -6,7 +6,7 @@ function render!(w::Label, buf::AbstractMatrix{Cell})::Nothing
     y = 1
     for line in wrap_width(w.text[], width)
         y > height && break
-        write_text!(buf, 1, y, line, st)
+        write_richtext!(buf, 1, y, line, st)
         y += 1
     end
     return nothing
@@ -14,7 +14,7 @@ end
 function render!(w::Static, buf::AbstractMatrix{Cell})::Nothing
     width, height = size(buf)
     (width <= 0 || height <= 0) && return nothing
-    write_text!(buf, 1, 1, w.text[], computed_style(w))
+    write_richtext!(buf, 1, 1, w.text[], computed_style(w))
     return nothing
 end
 

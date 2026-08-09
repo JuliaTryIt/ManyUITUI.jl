@@ -25,7 +25,7 @@ export Driver, AbstractApp
 export Cell, CELL_BLANK, CELL_CONT, is_continuation
 export Buffer, BufferView, buffer_size, buffer_region
 export clear!, resize_buffer
-export set_cell!, write_text!, fill_region!, style_region!, blit!
+export set_cell!, write_text!, write_richtext!, fill_region!, style_region!, blit!
 export ScrolledView, writable_region
 export Span, Patch, n_cells, diff, full_patch, apply!
 export Ansi, AnsiEncoder, reset!, sgr!, encode!, encode

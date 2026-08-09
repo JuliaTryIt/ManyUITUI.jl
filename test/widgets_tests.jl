@@ -101,12 +101,12 @@ end
 @testitem "widgets: Label text is reactive" begin
     using ManyUI, ManyUITUI
     l = Label("one")
-    @test l.text[] == "one"
+    @test plain(l.text[]) == "one"   # the cell holds a RichText
     clean!(l)
     l.text[] = "one"
     @test !is_dirty(l)          # E1: an equal write is a no-op
     l.text[] = "two"
-    @test l.text[] == "two"
+    @test plain(l.text[]) == "two"
     @test is_dirty(l, Dirty.LAYOUT)
     @test measure(l, Size(10, 1)) == Size(3, 1)
 end

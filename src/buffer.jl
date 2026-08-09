@@ -462,6 +462,35 @@ function write_text!(b::AbstractMatrix{Cell}, x::Int, y::Int,
 end
 
 """
+S3. Write the runs of `rt` left to right from `(x, y)`, each folded
+over `base`. Returns the total width advanced. Bounds-clipped.
+
+`merge(base, run.style)` is the cascade's own monoid, so a run styles a
+DIFFERENCE: an unstyled run paints as `base` exactly, and one naming
+only `bold` keeps `base`'s colours. That is what lets a `RichText` be
+built once and painted under any theme.
+
+STOPS at the first run the edge cut short, rather than letting the next
+one fill the freed cell. A width-2 cluster refused at the right edge
+leaves one cell, and a narrow run behind it would slide forward into a
+column it does not belong in -- what is painted has to be a PREFIX,
+which is the same rule `truncate_width` follows.
+"""
+function write_richtext!(b::AbstractMatrix{Cell}, x::Int, y::Int,
+                         rt::RichText, base::Style = STYLE_NONE)::Int
+    cx = x
+    total = 0
+    for r in rt.runs
+        want = text_width(r.text)
+        got = write_text!(b, cx, y, r.text, merge(base, r.style))
+        cx += got
+        total += got
+        got < want && break
+    end
+    return total
+end
+
+"""
 Fill `r` with `c`, clipped to `b`'s WRITABLE window.
 
 `writable_region`, not `buffer_region`: the two are identical for a
