@@ -117,8 +117,13 @@ function _paint_node!(buf::Buffer, w::Widget, clip::Region,
                      Cell(" ", st))
     end
 
-    # 2. Border, on the perimeter of the border box.
+    # 2. Border, on the perimeter of the border box, then the caption
+    #    ON it. The caption is painted HERE and not in `render!` for the
+    #    reason `border_title` states: `render!` is handed the CONTENT
+    #    box, and the border is outside it.
     paint_border!(clipped, _to_local(lb.border_box, clip), bs.border)
+    paint_border_title!(clipped, _to_local(lb.border_box, clip),
+                        bs.border, border_title(w), border_title_align(w))
 
     # 3. The widget itself. When the clip does not cut this node at all
     #    -- overwhelmingly the common case -- frame and clip coincide
@@ -149,6 +154,45 @@ function _paint_node!(buf::Buffer, w::Widget, clip::Region,
     for c in kids
         _paint_node!(buf, c, kid_clip, kx, ky)
     end
+    return nothing
+end
+
+"""
+Draw `rt` on the TOP edge of `r`, padded with one space each side.
+
+A no-op when there is no caption, no border to hang it on, or no room:
+the caption may use the edge BETWEEN the two corners and not one cell
+more. Overwriting a corner turns a frame into a broken frame, and it is
+the failure mode of every hand-rolled version of this -- so the budget
+is `r.width - 2` for the edge, less the two pad cells, and the caption
+is truncated to what is left.
+
+The BORDER's style is the base each run folds over, not the widget's:
+the caption sits on the line, so an unstyled one matches the line
+rather than resetting against it.
+"""
+function paint_border_title!(buf::AbstractMatrix{Cell}, r::Region,
+                             b::Border, rt::RichText,
+                             align::Align.T = Align.START)::Nothing
+    b.kind === BorderKind.NONE && return nothing
+    isempty(rt) && return nothing
+    isempty(r) && return nothing
+    # The caption may use the edge MINUS one glyph at each end, so the
+    # frame still reads as a frame: a caption flush against a corner
+    # looks like a broken one even when every cell is correct. Two
+    # corners, two kept glyphs and two pad cells is six, so a box
+    # narrower than seven carries no caption at all -- there is nothing
+    # left to put one on, and the frame is what must survive.
+    edge = r.width - 4
+    edge >= 3 || return nothing
+    cap = truncate_width(rt, edge - 2)
+    isempty(cap) && return nothing
+    w = text_width(cap) + 2
+    lead = first(cross_align(w, align, edge))
+    x = r.x + 2 + lead
+    write_text!(buf, x, r.y, " ", b.style)
+    n = write_richtext!(buf, x + 1, r.y, cap, b.style)
+    write_text!(buf, x + 1 + n, r.y, " ", b.style)
     return nothing
 end
 

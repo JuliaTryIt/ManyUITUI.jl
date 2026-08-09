@@ -34,7 +34,7 @@ export DriverCaps, CAPS_MINIMAL, DriverInterfaceError
 export start!, stop!, restore!, emit!, flush!
 export display_size, capabilities, events, set_title!, notify_resize!
 export REQUIRED_DRIVER_METHODS, check_driver_interface, WEB_BRIDGE_SURFACE
-export render!, paint!, paint_border!
+export render!, paint!, paint_border!, paint_border_title!
 export HeadlessDriver, push_event!, take_bytes!, output, clear_output!
 export press!, type!, click!, resize!, feed_bytes!
 export TerminalDriver, detect_caps, set_raw!
