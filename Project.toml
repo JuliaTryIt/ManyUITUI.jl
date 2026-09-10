@@ -10,6 +10,13 @@ Preferences = "21216c6a-2e73-6563-6e65-726566657250"
 REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
+[sources]
+# The ManyUI stack is not registered, so a consumer depending on this package
+# alone has nowhere to look for it. `[sources]` is honoured for a DEPENDENCY and
+# not only for the root project, so declaring it here spares every consumer from
+# redeclaring it. Same form ManyUICImGui already uses.
+ManyUI = {url = "https://github.com/juliatryit/ManyUI.jl.git"}
+
 [compat]
 Aqua = "0.8"
 DocStringExtensions = "0.9.5"
