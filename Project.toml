@@ -10,17 +10,13 @@ Preferences = "21216c6a-2e73-6563-6e65-726566657250"
 REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
-[sources]
-# The ManyUI stack is not registered, so a consumer depending on this package
-# alone has nowhere to look for it. `[sources]` is honoured for a DEPENDENCY and
-# not only for the root project, so declaring it here spares every consumer from
-# redeclaring it. Same form ManyUICImGui already uses.
-ManyUI = {url = "https://github.com/juliatryit/ManyUI.jl.git"}
+[sources.ManyUI]
+url = "https://github.com/juliatryit/ManyUI.jl.git"
 
 [compat]
 Aqua = "0.8"
 DocStringExtensions = "0.9.5"
-InlineStrings = "1.4.5"
+InlineStrings = "1.4.5, 2"
 ManyUI = "0.1.0"
 Preferences = "1"
 REPL = "1.11.0"
@@ -30,9 +26,9 @@ Unicode = "1.11.0"
 julia = "1.10"
 
 [extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
-Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 
 [targets]
 test = ["Aqua", "Test", "TestItemRunner"]
